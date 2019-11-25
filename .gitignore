@@ -1,3 +1,6 @@
+# Visual Studio Code
+#.vscode/
+
 # Compiled Object files
 *.o
 *.obj
@@ -16,9 +19,14 @@
 
 # DUB
 .dub
+dub.*.json
 docs.json
 __dummy.html
 docs/
 
 # Code coverage
 *.lst
+
+# Examples
+
+examples/UnitTest/hunt-xml-test

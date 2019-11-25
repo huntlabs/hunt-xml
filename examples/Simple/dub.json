@@ -1,0 +1,11 @@
+{
+    "name": "simple",
+    "targetType" : "executable",
+    "description": "A simple demo for hunt-xml.",
+    "copyright": "Copyright (C) 2018-2019, HuntLabs.net",
+    "license": "Apache-2.0",
+    "dependencies": {
+        "hunt-xml" :{"path": "../../"}
+    },
+    "debugVersions": ["HUNT_DEBUG"]
+}
