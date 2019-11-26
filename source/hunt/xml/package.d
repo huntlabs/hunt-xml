@@ -12,7 +12,8 @@
 module hunt.xml;
 
 public import hunt.xml.Attribute;
+public import hunt.xml.Common;
 public import hunt.xml.Document;
 public import hunt.xml.Element;
 public import hunt.xml.Node;
-public import hunt.xml.Common;
+public import hunt.xml.Writer;
