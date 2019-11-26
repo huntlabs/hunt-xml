@@ -1,6 +1,27 @@
+import hunt.xml;
+
+import std.file;
+import std.path;
 import std.stdio;
 
-void main()
-{
-	writeln("Edit source/app.d to start your project.");
+import hunt.logging.ConsoleLogger;
+
+void main() {
+
+	string rootPath = dirName(thisExePath());
+	string fullName = buildPath(rootPath, "resources/books.xml");
+	// string fullName = buildPath(rootPath, "books.xml");
+	trace(fullName);
+	string data = readText(fullName);
+	// trace(data);
+	Document document = new Document(data);
+
+
+	auto file = File("output.xml", "w");
+	auto ltw = file.lockingTextWriter;
+	// Writer!(File.LockingTextWriter, PrettyPrinters.Indenter) writer = buildWriter(ltw, PrettyPrinters.Indenter());
+	auto writer = buildWriter(ltw, PrettyPrinters.Minimalizer());
+
+    // writer.writeXMLDeclaration(10, "utf-8", false);
+	writer.write(document);
 }
