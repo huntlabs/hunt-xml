@@ -8,6 +8,15 @@ import hunt.xml.Internal;
 
 class Document : Element
 {
+    this() {
+        m_type = NodeType.Document;
+    }
+
+    this(string text) {
+        m_type = NodeType.Document;
+        parse(text);
+    }
+
     string parse(int Flags = 0)(string stext , Document parent = null)
     {
         this.removeAllNodes();

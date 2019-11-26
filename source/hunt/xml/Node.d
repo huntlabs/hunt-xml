@@ -12,6 +12,7 @@
 
 module hunt.xml.Node;
 
+import hunt.xml.Common;
 import hunt.xml.Element;
 
 /**
@@ -25,9 +26,19 @@ import hunt.xml.Element;
  *
  */
 class Node {
+    protected NodeType m_type;
     protected string m_name;
     protected string m_value;
     protected Element m_parent;
+
+    /**
+     * Returns the code according to the type of node. This makes processing
+     * nodes polymorphically much easier as the switch statement can be used
+     * instead of multiple if (instanceof) statements.
+     */
+    NodeType getType() {
+        return m_type;
+    }
 
     /**
      * <p>

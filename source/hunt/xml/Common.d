@@ -5,6 +5,7 @@ enum NodeType
     Document,      //!< A document node. Name and value are empty.
     Element,       //!< An element node. Name contains element name. Value contains text of first data node.
     Data,          //!< A data node. Name is empty. Value contains data text.
+    Attribute,
     CDATA,         //!< A CDATA node. Name is empty. Value contains data text.
     Comment,       //!< A comment node. Name is empty. Value contains comment text.
     Declaration,   //!< A declaration node. Name and value are empty. Declaration parameters (version, encoding and standalone) are in node attributes.

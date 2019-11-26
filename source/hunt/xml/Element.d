@@ -7,13 +7,16 @@ import hunt.xml.Common;
 import hunt.xml.Document;
 import hunt.xml.Node;
 
+// import std.algorithm;
+
+// import std.range;
+import std.string;
 
 class Element : Node
 {
 
     string m_prefix;
     string m_xmlns;
-    NodeType m_type;
     Element m_first_node;
     Element m_last_node;
     Attribute m_first_attribute;
@@ -21,6 +24,10 @@ class Element : Node
     Element m_prev_sibling;
     Element m_next_sibling;
     string m_contents;
+
+    this() {
+        m_type = NodeType.Element;
+    }
 
     string xmlns()
     {
@@ -94,7 +101,7 @@ class Element : Node
             if (attr !is null ) {
                 xmlns = cast(char[])attr.m_value.dup;
                 //  if (xmlns) {
-                //      xmlns_size = attr->value_size();
+                //      xmlns_size = attr.value_size();
                 //  }
                 break;
             }
@@ -108,7 +115,7 @@ class Element : Node
 
     }
 
-    Element firstNode(string name = null , string xmlns = null , bool case_sensitive = true)
+    Element firstNode(string name = null , string xmlns = null , bool caseSensitive = true)
     {
         if(xmlns.length == 0 && name.length > 0)
         {
@@ -126,7 +133,7 @@ class Element : Node
         return null;
     }
 
-    Element lastNode(string name = null , string xmlns = null , bool case_sensitive = true)
+    Element lastNode(string name = null , string xmlns = null , bool caseSensitive = true)
     {
         for(Element child = m_last_node ; child ; child = child.m_prev_sibling)
         {
@@ -136,6 +143,62 @@ class Element : Node
 
         return null;
     }
+
+    Element previousSibling(string name = null , string xmlns = null , bool caseSensitive = true)
+    {
+        assert(this.m_parent);     // Cannot query for siblings if node has no parent
+        if (name.length == 0)
+            return m_prev_sibling;
+
+        if (xmlns.length == 0) {
+            // No XMLNS asked for, but a name is present.
+            // Assume "same XMLNS".
+            xmlns = this.xmlns();
+        }
+
+        if(caseSensitive) {
+            for (Element sibling = m_prev_sibling; sibling !is null; sibling = sibling.m_prev_sibling) {
+                if ((sibling.getName() == name)
+                    && (xmlns.length == 0 || (sibling.xmlns() == xmlns)))
+                    return sibling;
+            }
+        } else {
+            for (Element sibling = m_prev_sibling; sibling !is null; sibling = sibling.m_prev_sibling) {
+                if ((icmp(sibling.getName(), name) == 0)
+                    && (xmlns.length == 0 || icmp(sibling.xmlns(), xmlns) == 0))
+                    return sibling;
+            }
+        }
+
+        return null;
+    }
+    
+    Element nextSibling(string name = null , string xmlns = null , bool caseSensitive = true) {
+        if (name.length == 0)
+            return m_next_sibling;
+
+        if (xmlns.length == 0) {
+            // No XMLNS asked for, but a name is present.
+            // Assume "same XMLNS".
+            xmlns = this.xmlns();
+        }
+
+        if(caseSensitive) {
+            for (Element sibling = m_next_sibling; sibling !is null; sibling = sibling.m_next_sibling) {
+                if ((sibling.getName() == name)
+                    && (xmlns.length == 0 || (sibling.xmlns() == xmlns)))
+                    return sibling;
+            }
+        } else {
+            for (Element sibling = m_next_sibling; sibling !is null; sibling = sibling.m_next_sibling) {
+                if ((icmp(sibling.getName(), name) == 0)
+                    && (xmlns.length == 0 || icmp(sibling.xmlns(), xmlns) == 0))
+                    return sibling;
+            }
+        }
+        return null;
+    }
+
 
     void prependNode(Element child)
     {
@@ -238,7 +301,7 @@ class Element : Node
         m_first_node = null;
     }
 
-    Attribute firstAttribute(string name = null , bool case_sensitive = true)
+    Attribute firstAttribute(string name = null , bool caseSensitive = true)
     {
         if(name)
         {
@@ -259,7 +322,7 @@ class Element : Node
         }
     }
 
-    Attribute lastAttribute(string name = null , bool case_sensitive = true)
+    Attribute lastAttribute(string name = null , bool caseSensitive = true)
     {
         if(name)
         {

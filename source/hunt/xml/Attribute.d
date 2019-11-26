@@ -13,6 +13,11 @@ class Attribute : Node
     string    m_xmlns;
     string    m_local_name;
 
+    this() {
+        
+        m_type = NodeType.Attribute;
+    }
+
     Document document() 
     {
         if (Element node = m_parent)

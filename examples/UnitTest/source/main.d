@@ -3,6 +3,7 @@ module main;
 import hunt.xml;
 
 import std.stdio;
+import hunt.logging.ConsoleLogger;
 
 void test1()
 {
@@ -135,6 +136,7 @@ void test10()
     auto node = doc.firstNode();
     assert(node.getName() == "class");
     auto student = node.firstNode();
+    infof("%s", student.getType());
     auto attr = student.firstAttribute();
     assert(attr.getName() == "attr");
     assert(attr.getText() == "11");
@@ -142,25 +144,29 @@ void test10()
     auto attr2 = attr.m_next_attribute;
     assert(attr2.getName()=="attr2");
     assert(attr2.getText() == "22");
+    infof("%s", attr2.getType());
 
     assert(student.getName() == "student");
 
     auto age = student.firstNode();
     assert(age.getName() == "age");
     assert(age.getText() == "10");
-    auto name = age.m_next_sibling;
+    
+    infof("%s", age.getType());
+
+    auto name = age.nextSibling();
     assert(name.getName() == "name");
     assert(name.getText() == "zhyc");
-    auto student1 = student.m_next_sibling;
+    auto student1 = student.nextSibling();
 
     auto age1 = student1.firstNode();
     assert(age1.getName() == "age");
     assert(age1.getText() == "11");
-    auto name1 = age1.m_next_sibling;
+    auto name1 = age1.nextSibling();
     assert(name1.getName() == "name");
     assert(name1.getText() == "spring");
 
-    assert(student1.m_next_sibling is null);
+    assert(student1.nextSibling() is null);
 
     doc.validate();
 }
@@ -174,14 +180,14 @@ void test11()
 
 int main()
 {
-    test1();
-    test2();
-    test3();
-    test4();
-    test5();
-    test6();
-    test7();
-    test8();
+    // test1();
+    // test2();
+    // test3();
+    // test4();
+    // test5();
+    // test6();
+    // test7();
+    // test8();
     test10();
     // test11();
 
