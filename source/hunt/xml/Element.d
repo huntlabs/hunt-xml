@@ -7,15 +7,12 @@ import hunt.xml.Common;
 import hunt.xml.Document;
 import hunt.xml.Node;
 
-// import std.algorithm;
-
-// import std.range;
 import std.string;
 
 class Element : Node
 {
 
-    string m_prefix;
+    protected string m_prefix;
     string m_xmlns;
     Element m_first_node;
     Element m_last_node;
@@ -25,8 +22,8 @@ class Element : Node
     Element m_next_sibling;
     string m_contents;
 
-    this() {
-        m_type = NodeType.Element;
+    this(NodeType type = NodeType.Element) {
+        m_type = type;
     }
 
     string xmlns()
@@ -113,6 +110,40 @@ class Element : Node
             }
         }
 
+    }
+
+	/**
+	 * Returns the fully qualified name of this element. This will be the same
+	 * as the value returned from {@link #getName}if this element has no
+	 * namespace attached to this element or an expression of the form
+	 * <pre>
+	 * getNamespacePrefix() + &quot;:&quot; + getName()
+	 * </pre>
+	 * will be returned.
+	 *
+	 * @return the fully qualified name of the element.
+	 */
+	string getNamespacePrefix() {
+        return m_prefix;
+    }
+
+    /**
+	 * Returns the fully qualified name of this element. This will be the same
+	 * as the value returned from {@link #getName}if this element has no
+	 * namespace attached to this element or an expression of the form
+	 * <pre>
+	 * getNamespacePrefix() + &quot;:&quot; + getName()
+	 * </pre>
+	 * will be returned.
+	 *
+	 * @return the fully qualified name of the element.
+	 */
+	string getQualifiedName() {
+        // TODO: Tasks pending completion -@zhangxueping at 2019-11-26T17:44:39+08:00
+        // 
+        if(m_prefix.empty())
+            return getName();
+        return m_prefix ~ "&quot;:&quot;" ~ getName();
     }
 
     Element firstNode(string name = null , string xmlns = null , bool caseSensitive = true)

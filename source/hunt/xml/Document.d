@@ -451,8 +451,7 @@ class Document : Element
         if (Flags & parse_pi_nodes)
         {
             // Create pi node
-            Element pi = new Element;
-            Element.m_type = NodeType.PI;
+            Element pi = new Element(NodeType.ProcessingInstruction);
 
             // Extract PI target name
             char[] name = text;
@@ -588,7 +587,7 @@ class Document : Element
         {
             // Create a new doctype node
             Element doctype = new Element;
-            doctype.m_type = NodeType.DOCTYPE;
+            doctype.m_type = NodeType.DocumentType;
             doctype.m_value = cast(string)value[ 0 .. value.length - text.length].dup;
 
             // Place zero terminator after value

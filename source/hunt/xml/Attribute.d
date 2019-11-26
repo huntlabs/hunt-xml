@@ -5,7 +5,11 @@ import hunt.xml.Document;
 import hunt.xml.Element;
 import hunt.xml.Node;
 
+import std.string;
 
+/** 
+ * 
+ */
 class Attribute : Node
 {
     Attribute m_prev_attribute;
@@ -53,4 +57,47 @@ class Attribute : Node
         }
         return m_xmlns;
     }
+
+    Attribute nextAttribute(string name = null , bool caseSensitive = true) {
+        if (name.length > 0)
+        {
+            if(caseSensitive) {
+                for (Attribute attribute = m_next_attribute; attribute !is null; attribute = attribute.m_next_attribute) {
+                    if (attribute.getName() == name)
+                        return attribute;
+                }
+            } else {
+                for (Attribute attribute = m_next_attribute; attribute !is null; attribute = attribute.m_next_attribute) {
+                    if (icmp(attribute.getName(), name) == 0)
+                        return attribute;
+                }
+            }
+            return null;
+        }
+        else {
+            return m_parent is null ? null : m_next_attribute;
+        }
+    }
+
+
+	/**
+	 * Returns the value of the attribute. This method returns the same value as
+	 * the {@link Node#getText()}method.
+	 *
+	 * @return the value of the attribute
+	 */
+	string getValue() {
+        return m_value;
+    }
+
+	/**
+	 * Sets the value of this attribute or this method will throw an
+	 * <code>UnsupportedOperationException</code> if it is read-only.
+	 *
+	 * @param value is the new value of this attribute
+	 */
+	void setValue(string value) {
+        m_value = value;
+    }
+    
 }

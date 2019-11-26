@@ -1,17 +1,28 @@
 module hunt.xml.Common;
 
+/++
++   An integer indicating which type of node this is.
++
++   Note:
++   Numeric codes up to 200 are reserved to W3C for possible future use.
++/
 enum NodeType
 {
-    Document,      //!< A document node. Name and value are empty.
-    Element,       //!< An element node. Name contains element name. Value contains text of first data node.
-    Data,          //!< A data node. Name is empty. Value contains data text.
+    Element = 1,    //!< An element node. Name contains element name. Value contains text of first data node.
     Attribute,
-    CDATA,         //!< A CDATA node. Name is empty. Value contains data text.
-    Comment,       //!< A comment node. Name is empty. Value contains comment text.
-    Declaration,   //!< A declaration node. Name and value are empty. Declaration parameters (version, encoding and standalone) are in node attributes.
-    DOCTYPE,       //!< A DOCTYPE node. Name is empty. Value contains DOCTYPE text.
-    PI,            //!< A PI node. Name contains target. Value contains instructions.
-    Literal        //!< Value is unencoded text (used for inserting pre-rendered XML).
+    Text,           //!< A data node. Name is empty. Value contains data text.
+    CDATA,          //!< A CDATA node. Name is empty. Value contains data text.
+    EntityReference,
+    Entity,
+    ProcessingInstruction, //!< A PI node. Name contains target. Value contains instructions.
+    Comment,        //!< A comment node. Name is empty. Value contains comment text.
+    Document,       //!< A document node. Name and value are empty.
+    DocumentType,   //!< A DOCTYPE node. Name is empty. Value contains DOCTYPE text.
+    // Declaration,    //!< A declaration node. Name and value are empty. Declaration parameters (version, encoding and standalone) are in node attributes.
+    
+    DocumentFragment,
+    Notation,
+    //!< Value is unencoded text (used for inserting pre-rendered XML).
 }
 
 
