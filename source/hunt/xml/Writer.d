@@ -115,12 +115,12 @@ auto buildWriter(OutRange, PrettyPrinter)(ref OutRange output, PrettyPrinter pre
 
 struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) {
     private PrettyPrinter prettyPrinter;
-    private OutRange output;
+    private OutRange* output;
 
     bool startingTag = false, insideDTD = false;
 
     this(ref OutRange output, PrettyPrinter pretty) {
-        this.output = output;
+        this.output = &output;
         prettyPrinter = pretty;
     }
 

@@ -9,7 +9,6 @@ import hunt.xml.Internal;
 import hunt.xml.Writer;
 
 import std.array : Appender;
-import std.typecons : refCounted;
 
 /** 
  * 
@@ -624,7 +623,7 @@ class Document : Element
     }
 
     override string toString() {
-        auto appender = Appender!string().refCounted;
+        auto appender = Appender!string();
         auto writer = buildWriter(appender, PrettyPrinters.Minimalizer());
         writer.write(this);
 
@@ -633,7 +632,7 @@ class Document : Element
     }
 
     string toBeautifulString() {
-        auto appender = Appender!string().refCounted;
+        auto appender = Appender!string();
         auto writer = buildWriter(appender, PrettyPrinters.Indenter());
         writer.write(this);
         return appender.data();
