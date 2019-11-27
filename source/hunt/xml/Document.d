@@ -38,14 +38,14 @@ class Document : Element
         while(1)
         {
             skip!(WhitespacePred)(text); 
-            if(index >= text.length)
+            if(text.length == 0)
                 break;
             if(text[index] =='<')
             {
                 ++index;
                 text = text[index .. $];
                 Element  node = parseNode!(Flags)(text);
-                if(node)
+                if(node !is null)
                 {
                     this.appendNode(node);
                     if(Flags & (parse_open_only | parse_parse_one))
@@ -54,6 +54,7 @@ class Document : Element
                             break;
                     }
                 }
+                index=0;
             }
             else
                 throw new XmlParsingException("expected <", text);
@@ -69,15 +70,16 @@ class Document : Element
     {
         switch(text[0])
         {
+            // <...
             default:
                 return parseElement!Flags(text);
 
+            // <?...
             case '?':
                 text = text[1 .. $ ];
-                if(
-                    ((text[0] == 'x' ) || (text[0] == 'X')) &&
-                ((text[0] == 'm' ) || (text[0] == 'M')) &&
-                ((text[0] == 'l' ) || (text[0] == 'L')) &&
+                if(((text[0] == 'x' ) || (text[0] == 'X')) &&
+                ((text[1] == 'm' ) || (text[1] == 'M')) &&
+                ((text[2] == 'l' ) || (text[2] == 'L')) &&
                 WhitespacePred.test(text[3]))
                 {
                     text = text[4 .. $];
@@ -417,23 +419,8 @@ class Document : Element
 
     private Element parseXmlDeclaration(int Flags)(ref char[] text)
     {
-        // If parsing of declaration is disabled
-        if (!(Flags & parse_declaration_node))
-        {
-            // Skip until end of declaration
-            while (text[0] != '?' || text[1] != '>')
-            {
-                if (!text[0]) 
-                throw new XmlParsingException("unexpected end of data", text);
-                text = text[1 .. $ ];
-            }
-            text = text[2 .. $ ];    // Skip '?>'
-            return null;
-        }
-
-        static if (Flags != 0)
-        // Create declaration
-        {
+        static if (Flags & parse_declaration_node) {
+            // Create declaration
             Element declaration = new Element(NodeType.Declaration);
 
             // Skip whitespace before attributes or ?>
@@ -447,6 +434,17 @@ class Document : Element
             text = text[2 .. $ ];
 
             return declaration;
+        } else {
+            // If parsing of declaration is disabled
+            // Skip until end of declaration
+            while (text[0] != '?' || text[1] != '>')
+            {
+                if (!text[0]) 
+                throw new XmlParsingException("unexpected end of data", text);
+                text = text[1 .. $ ];
+            }
+            text = text[2 .. $ ];    // Skip '?>'
+            return null;
         }
     }
 
@@ -504,24 +502,9 @@ class Document : Element
 
     private Element parseComment(int Flags)(ref char[] text)
     {
-        // If parsing of comments is disabled
-        if (!(Flags & parse_comment_nodes))
-        {
-            // Skip until end of comment
-            while (text[0] != '-' || text[1] != '-' || text[2] != '>')
-            {
-                if (!text[0]) throw new XmlParsingException("unexpected end of data", text);
-                text = text[1 .. $];
-            }
-            text = text [3 .. $];     // Skip '-->'
-            return null;      // Do not produce comment node
-        }
-
-        // Remember value start
-
-        static if (Flags != 0)
-        {
-            string value = text;
+        static if (Flags & parse_comment_nodes) {
+            // Remember value start
+            auto value = text;
 
             // Skip until end of comment
             while (text[0] != '-' || text[1] != '-' || text[2] != '>')
@@ -539,7 +522,19 @@ class Document : Element
 
             text = text[3 .. $ ];     // Skip '-->'
             return comment;
+        } else { 
+            // If parsing of comments is disabled
+            // Skip until end of comment
+            while (text[0] != '-' || text[1] != '-' || text[2] != '>')
+            {
+                if (!text[0]) throw new XmlParsingException("unexpected end of data", text);
+                text = text[1 .. $];
+            }
+            text = text [3 .. $];     // Skip '-->'
+            return null;      // Do not produce comment node
         }
+
+
     }
 
     // Parse DOCTYPE
@@ -622,18 +617,16 @@ class Document : Element
         }
     }
 
-    override string toString() {
+    string toPrettyString() {
         auto appender = Appender!string();
-        auto writer = buildWriter(appender, PrettyPrinters.Minimalizer());
+        auto writer = buildWriter(appender, PrettyPrinters.Indenter());
         writer.write(this);
-
-        import hunt.logging.ConsoleLogger;
         return appender.data();
     }
 
-    string toBeautifulString() {
+    override string toString() {
         auto appender = Appender!string();
-        auto writer = buildWriter(appender, PrettyPrinters.Indenter());
+        auto writer = buildWriter(appender, PrettyPrinters.Minimalizer());
         writer.write(this);
         return appender.data();
     }
