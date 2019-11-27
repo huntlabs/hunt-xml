@@ -6,6 +6,14 @@ import hunt.xml.Element;
 import hunt.xml.Node;
 import hunt.xml.Internal;
 
+import hunt.xml.Writer;
+
+import std.array : Appender;
+import std.typecons : refCounted;
+
+/** 
+ * 
+ */
 class Document : Element
 {
     this() {
@@ -597,5 +605,37 @@ class Document : Element
             text = text[1 .. $ ];      // skip '>'
             return null;
         }
+    }
+
+    void toFile(string fileName, bool isIndented = true) {
+        import std.stdio;
+        auto file = File(fileName, "w");
+        scope(exit) {
+            file.close();
+        }
+        auto textWriter = file.lockingTextWriter;
+        if(isIndented) {
+            auto writer = buildWriter(textWriter, PrettyPrinters.Indenter());
+            writer.write(this);
+        } else {
+            auto writer = buildWriter(textWriter, PrettyPrinters.Minimalizer());
+            writer.write(this);
+        }
+    }
+
+    override string toString() {
+        auto appender = Appender!string().refCounted;
+        auto writer = buildWriter(appender, PrettyPrinters.Minimalizer());
+        writer.write(this);
+
+        import hunt.logging.ConsoleLogger;
+        return appender.data();
+    }
+
+    string toBeautifulString() {
+        auto appender = Appender!string().refCounted;
+        auto writer = buildWriter(appender, PrettyPrinters.Indenter());
+        writer.write(this);
+        return appender.data();
     }
 }
