@@ -326,15 +326,6 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
         mixin(ifAnyCompiles(expand!"afterNode"));
     }
 
-    void startElementWithTextNode(string tagName) {
-        closeOpenThings();
-
-        mixin(ifAnyCompiles(expand!"beforeNode"));
-        output.put("<");
-        output.put(tagName);
-        startingTag = true;
-    }
-
     void closeElementWithTextNode(string tagName) {
         bool selfClose;
         mixin(ifCompilesElse("selfClose = prettyPrinter.selfClosingElements", "selfClose = true"));
@@ -424,7 +415,8 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
             break;
 
         case NodeType.Text:
-            writeNodeText(node);
+            // writeNodeText(node);
+            writeText(node.getText());
             break;
 
         default:
@@ -455,31 +447,22 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
     private void writeElement(Element element) {
         Element child = element.firstNode();         
         debug(HUNT_DEBUG) tracef("name %s, type: %s, text: %s", element.getName(), element.getType(), element.getText());
+        
+        startElement(element.getQualifiedName());
+        writeAttributes(element);
 
-        if (child is null) {
-            writeText(element.getText());
+        if(child is null) {
+            closeElement(element.getQualifiedName());
         } else if(child.getType() == NodeType.Text) {
-            infof("value %s, type: %s", child.getText(), child.getType());
-            
-            startElementWithTextNode(element.getQualifiedName());
-
-            writeAttributes(element);
+            if(child !is null) {
+                infof("value %s, type: %s", child.getText(), child.getType());
+            }
             writeText(element.getText());
-
             closeElementWithTextNode(element.getQualifiedName());
         } else {
             debug(HUNT_DEBUG) infof("name %s, type: %s", child.getName(), child.getType());
-
-            startElement(element.getQualifiedName());
-
-            writeAttributes(element);
             writeChildren(element);
-
             closeElement(element.getQualifiedName());
         }
-    }
-
-    private void writeNodeText(Node node) {
-        writeText(node.getText());
     }
 }

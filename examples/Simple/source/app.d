@@ -19,9 +19,8 @@ void main() {
 
 	auto file = File("output.xml", "w");
 	auto ltw = file.lockingTextWriter;
-	// Writer!(File.LockingTextWriter, PrettyPrinters.Indenter) writer = buildWriter(ltw, PrettyPrinters.Indenter());
-	auto writer = buildWriter(ltw, PrettyPrinters.Minimalizer());
+	Writer!(File.LockingTextWriter, PrettyPrinters.Indenter) writer = buildWriter(ltw, PrettyPrinters.Indenter());
+	// auto writer = buildWriter(ltw, PrettyPrinters.Minimalizer());
 
-    // writer.writeXMLDeclaration(10, "utf-8", false);
 	writer.write(document);
 }

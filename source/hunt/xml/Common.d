@@ -18,10 +18,10 @@ enum NodeType
     Comment,        //!< A comment node. Name is empty. Value contains comment text.
     Document,       //!< A document node. Name and value are empty.
     DocumentType,   //!< A DOCTYPE node. Name is empty. Value contains DOCTYPE text.
-    // Declaration,    //!< A declaration node. Name and value are empty. Declaration parameters (version, encoding and standalone) are in node attributes.
-    
+   
     DocumentFragment,
     Notation,
+    Declaration    //!< A declaration node. Name and value are empty. Declaration parameters (version, encoding and standalone) are in node attributes.
     //!< Value is unencoded text (used for inserting pre-rendered XML).
 }
 
