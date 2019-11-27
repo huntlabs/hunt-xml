@@ -156,8 +156,7 @@ class Document : Element
         }
 
         // Create new cdata node
-        Element cdata = new Element;
-        Element.m_type = NodeType.CDATA;
+        Element cdata = new Element(NodeType.CDATA);
         cdata.m_value = cast(string)value[ 0 .. value.length - text.length].dup;
 
         // Place zero terminator after value
@@ -201,7 +200,7 @@ class Document : Element
         // Create new data node
         if (!(Flags & parse_no_data_nodes))
         {
-            Element data = new Element;
+            Element data = new Element(NodeType.Text);
             data.m_value = cast(string)value[0 .. value.length - end.length].dup;
             node.appendNode(data);
         }
@@ -428,8 +427,7 @@ class Document : Element
         static if (Flags != 0)
         // Create declaration
         {
-            Element declaration = new Element;
-            declaration.m_type = NodeType.Declaration;
+            Element declaration = new Element(NodeType.Declaration);
 
             // Skip whitespace before attributes or ?>
             skip!whitespace_pred(text);
@@ -526,8 +524,7 @@ class Document : Element
             }
 
             // Create comment node
-            Element comment = new Element;
-            comment.m_type = NodeType.Comment;
+            Element comment = new Element(NodeType.Comment);
             comment.m_value = cast(string)value[0 .. value.length - text.length].dup;
 
             // Place zero terminator after comment value
@@ -586,8 +583,7 @@ class Document : Element
         if (Flags & parse_doctype_node)
         {
             // Create a new doctype node
-            Element doctype = new Element;
-            doctype.m_type = NodeType.DocumentType;
+            Element doctype = new Element(NodeType.DocumentType);
             doctype.m_value = cast(string)value[ 0 .. value.length - text.length].dup;
 
             // Place zero terminator after value
