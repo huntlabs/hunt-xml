@@ -30,7 +30,7 @@ class Document : Element
         size_t length = text.length;
         while(1)
         {
-            skip!(whitespace_pred)(text); 
+            skip!(WhitespacePred)(text); 
             if(index >= text.length)
                 break;
             if(text[index] =='<')
@@ -71,7 +71,7 @@ class Document : Element
                     ((text[0] == 'x' ) || (text[0] == 'X')) &&
                 ((text[0] == 'm' ) || (text[0] == 'M')) &&
                 ((text[0] == 'l' ) || (text[0] == 'L')) &&
-                whitespace_pred.test(text[3]))
+                WhitespacePred.test(text[3]))
                 {
                     text = text[4 .. $];
                     return parseXmlDeclaration!Flags(text);
@@ -105,7 +105,7 @@ class Document : Element
                 case ('D'):
                     if (text[2] == ('O') && text[3] == ('C') && text[4] == ('T') &&
                         text[5] == ('Y') && text[6] == ('P') && text[7] == ('E') &&
-                        whitespace_pred.test(text[8]))
+                        WhitespacePred.test(text[8]))
                     {
                         // '<!DOCTYPE ' - doctype
                         text = text[9 .. $ ];      // skip '!DOCTYPE '
@@ -175,9 +175,9 @@ class Document : Element
         char [] value = text;
         char []end;
         if (Flags & parse_normalize_whitespace)
-            end = skipAndExpandCharacterRefs!(text_pred, text_pure_with_ws_pred, Flags)(text);
+            end = skipAndExpandCharacterRefs!(TextPred, TextPureWithWsPred, Flags)(text);
         else
-            end = skipAndExpandCharacterRefs!(text_pred, text_pure_no_ws_pred, Flags)(text);
+            end = skipAndExpandCharacterRefs!(TextPred, TextPureNoWsPred, Flags)(text);
 
         // Trim trailing whitespace if flag is set; leading was already trimmed by whitespace skip after >
         if (Flags & parse_trim_whitespace)
@@ -191,7 +191,7 @@ class Document : Element
             else
             {
                 // Backup until non-whitespace character is found
-                while (whitespace_pred.test(end[-1]))
+                while (WhitespacePred.test(end[-1]))
                     end = end[-1 .. $ - 1];
             }
         }
@@ -226,8 +226,8 @@ class Document : Element
     {
         Element element = new Element();
         char[] prefix = text;
-        //skip element_name_pred
-        skip!(element_name_pred)(text);
+        //skip ElementNamePred
+        skip!(ElementNamePred)(text);
         if(text == prefix)
             throw new XmlParsingException("expected element name or prefix", text);
         if(text.length >0 && text[0] == ':')
@@ -235,8 +235,8 @@ class Document : Element
             element.m_prefix = prefix[0 .. prefix.length - text.length].dup;
             text = text[1 .. $ ];
             char[] name = text;
-            //skip node_name_pred
-            skip!(node_name_pred)(text);
+            //skip NodeNamePred
+            skip!(NodeNamePred)(text);
             if(text == name)
                 throw new XmlParsingException("expected element local name", text);
             element.m_name = name[0 .. name.length - text.length].dup;
@@ -245,8 +245,8 @@ class Document : Element
             element.m_name = prefix[ 0 .. prefix.length - text.length].dup;            
         }
 
-        //skip whitespace_pred
-        skip!(whitespace_pred)(text);
+        //skip WhitespacePred
+        skip!(WhitespacePred)(text);
         parseNodeAttributes!(Flags)(text , element);
         if(text.length > 0 && text[0] == '>')
         {
@@ -287,7 +287,7 @@ class Document : Element
         while(1)
         {
             char[] contents_start = text;
-            skip!(whitespace_pred)(text);
+            skip!(WhitespacePred)(text);
             char next_char = text[0];
 
             after_data_node:
@@ -302,16 +302,16 @@ class Document : Element
                     if(Flags & parse_validate_closing_tags)
                     {
                         string closing_name = cast(string)text.dup;
-                        skip!(node_name_pred)(text);
+                        skip!(NodeNamePred)(text);
                         if(closing_name == node.m_name)
                             throw new XmlParsingException("invalid closing tag name", text);
                     }
                     else
                     {
-                        skip!(node_name_pred)(text);
+                        skip!(NodeNamePred)(text);
                     }
 
-                    skip!(whitespace_pred)(text);
+                    skip!(WhitespacePred)(text);
                     if(text[0] != '>')
                         throw new XmlParsingException("expected >", text);
                     text = text[1 .. $];
@@ -340,11 +340,11 @@ class Document : Element
     {
         int index = 0;
 
-        while(text.length > 0 && attribute_name_pred.test(text[0]))
+        while(text.length > 0 && AttributeNamePred.test(text[0]))
         {
             char[] name = text;
             text = text[1 .. $ ];
-            skip!(attribute_name_pred)(text);
+            skip!(AttributeNamePred)(text);
             if(text == name)
                 throw new XmlParsingException("expected attribute name", name);
 
@@ -353,14 +353,14 @@ class Document : Element
 
             node.appendAttribute(attribute);
 
-            skip!(whitespace_pred)(text);
+            skip!(WhitespacePred)(text);
 
             if(text.length ==0 || text[0] != '=')
                 throw new XmlParsingException("expected =", text);
 
             text = text[1 .. $ ];
 
-            skip!(whitespace_pred)(text);
+            skip!(WhitespacePred)(text);
 
             char quote = text[0];
             if(quote != '\'' && quote != '"')
@@ -372,9 +372,9 @@ class Document : Element
             const int AttFlags = Flags & ~parse_normalize_whitespace;
 
             if(quote == '\'')
-                end = skipAndExpandCharacterRefs!(attribute_value_pred!'\'' , attribute_value_pure_pred!('\'') , AttFlags)(text);
+                end = skipAndExpandCharacterRefs!(AttributeValuePred!'\'' , AttributeValuePurePred!('\'') , AttFlags)(text);
             else
-                end = skipAndExpandCharacterRefs!(attribute_value_pred!('"') , attribute_value_pure_pred!('"') , AttFlags)(text);
+                end = skipAndExpandCharacterRefs!(AttributeValuePred!('"') , AttributeValuePurePred!('"') , AttFlags)(text);
 
             attribute.m_value = cast(string)value[0 .. value.length - end.length].dup;
 
@@ -383,7 +383,7 @@ class Document : Element
 
             text = text[1 .. $ ];
 
-            skip!(whitespace_pred)(text);
+            skip!(WhitespacePred)(text);
         }
     }
 
@@ -430,7 +430,7 @@ class Document : Element
             Element declaration = new Element(NodeType.Declaration);
 
             // Skip whitespace before attributes or ?>
-            skip!whitespace_pred(text);
+            skip!WhitespacePred(text);
             // Parse declaration attributes
             parseNodeAttributes!Flags(text, declaration);
 
@@ -453,13 +453,13 @@ class Document : Element
 
             // Extract PI target name
             char[] name = text;
-            skip!node_name_pred(text);
+            skip!NodeNamePred(text);
             if (text == name) 
                 throw new XmlParsingException("expected PI target", text);
             pi.m_name = cast(string)name[0 .. name.length - text.length].dup;
 
             // Skip whitespace between pi target and pi
-            skip!whitespace_pred(text);
+            skip!WhitespacePred(text);
 
             // Remember start of pi
             char[] value = text;

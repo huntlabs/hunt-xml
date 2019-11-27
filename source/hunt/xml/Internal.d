@@ -328,7 +328,7 @@ enum int parse_full = parse_declaration_node | parse_comment_nodes |
 
 import std.stdio;
 
-void insert_coded_character(int Flags)(ref char[] text,  ulong code)
+void insertCodedCharacter(int Flags)(ref char[] text,  ulong code)
 {
     if (Flags & parse_no_utf8)
     {
@@ -470,7 +470,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
                             code = code * 16 + digit;
                             src = src[1 .. $ - 1];
                         }
-                        //   insert_coded_character!Flags(dest, code);    // Put character in output
+                        //   insertCodedCharacter!Flags(dest, code);    // Put character in output
                     }
                     else
                     {
@@ -484,7 +484,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
                             code = code * 10 + digit;
                             src=src[1 .. $ - 1];
                         }
-                    //      insert_coded_character!Flags(dest, code);    // Put character in output
+                    //      insertCodedCharacter!Flags(dest, code);    // Put character in output
                     }
                     if (src[0] == (';'))
                         src=src[1..$ - 1];
@@ -505,12 +505,12 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
         if (Flags & parse_normalize_whitespace)
         {
             // Test if condensing is needed
-            if (whitespace_pred.test(src[0]))
+            if (WhitespacePred.test(src[0]))
             {
                 dest[index] = (' '); ++index;    // Put single space in dest
                 src = src[1 .. $ - 1];                      // Skip first whitespace char
                 // Skip remaining whitespace chars
-                while (whitespace_pred.test(src[0]))
+                while (WhitespacePred.test(src[0]))
                     src = src[1 .. $ - 1];
                 continue;
             }
@@ -538,7 +538,7 @@ void skip(T)(ref char[] text)
     text = text[index .. $];
 }
 
-struct whitespace_pred
+struct WhitespacePred
 {
     static ubyte test(ubyte ch)
     {
@@ -547,7 +547,7 @@ struct whitespace_pred
 }
 
 // Detect node name character
-struct node_name_pred
+struct NodeNamePred
 {
     static ubyte test(ubyte ch)
     {
@@ -556,7 +556,7 @@ struct node_name_pred
 }
 
 // Detect element name character
-struct element_name_pred
+struct ElementNamePred
 {
     static ubyte test(ubyte ch)
     {
@@ -565,7 +565,7 @@ struct element_name_pred
 }
 
 // Detect attribute name character
-struct attribute_name_pred
+struct AttributeNamePred
 {
     static ubyte test(ubyte ch)
     {
@@ -574,7 +574,7 @@ struct attribute_name_pred
 }
 
 // Detect text character (PCDATA)
-struct text_pred
+struct TextPred
 {
     static ubyte test(ubyte ch)
     {
@@ -583,7 +583,7 @@ struct text_pred
 }
 
 // Detect text character (PCDATA) that does not require processing
-struct text_pure_no_ws_pred
+struct TextPureNoWsPred
 {
     static ubyte test(ubyte ch)
     {
@@ -592,7 +592,7 @@ struct text_pure_no_ws_pred
 }
 
 // Detect text character (PCDATA) that does not require processing
-struct text_pure_with_ws_pred
+struct TextPureWithWsPred
 {
     static  ubyte test(ubyte ch)
     {
@@ -602,7 +602,7 @@ struct text_pure_with_ws_pred
 
 // Detect attribute value character
 
-struct attribute_value_pred(alias Quote)
+struct AttributeValuePred(alias Quote)
 {
     static ubyte test(ubyte ch)
     {
@@ -616,7 +616,7 @@ struct attribute_value_pred(alias Quote)
 }
 
 // Detect attribute value character
-struct attribute_value_pure_pred(alias Quote)
+struct AttributeValuePurePred(alias Quote)
 {
     static ubyte test(ubyte ch)
     {
