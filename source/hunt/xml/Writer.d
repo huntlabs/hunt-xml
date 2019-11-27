@@ -244,22 +244,10 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
     +/
     void writeText(string text) {
         //assert(!insideDTD);
-        closeOpenThings1();
-
-        mixin(ifAnyCompiles(expand!"beforeNode"));
-        mixin(ifCompilesElse("prettyPrinter.formatText(output, comment)", "output.put(text)"));
-        mixin(ifAnyCompiles(expand!"afterNode"));
+        closeOpenThingsSimplely();
+        mixin(ifCompilesElse("prettyPrinter.formatText(output, text)", "output.put(text)"));
     }
 
-    private void closeOpenThings1() {
-        if (startingTag) {
-            mixin(ifAnyCompiles(expand!"beforeElementEnd"));
-            output.put(">");
-            mixin(ifAnyCompiles(expand!"afterNode"));
-            startingTag = false;
-            mixin(ifCompiles("prettyPrinter.increaseLevel"));
-        }
-    }
 
     /++
     +   Outputs a CDATA section with the given content.
@@ -300,6 +288,13 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
             mixin(ifCompiles("prettyPrinter.increaseLevel"));
         }
     }
+    
+    private void closeOpenThingsSimplely() {
+        if (startingTag) {
+            output.put(">");
+            startingTag = false;
+        }
+    }
 
     void startElement(string tagName) {
         closeOpenThings();
@@ -330,6 +325,36 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
         }
         mixin(ifAnyCompiles(expand!"afterNode"));
     }
+
+    void startElementWithTextNode(string tagName) {
+        closeOpenThings();
+
+        mixin(ifAnyCompiles(expand!"beforeNode"));
+        output.put("<");
+        output.put(tagName);
+        startingTag = true;
+    }
+
+    void closeElementWithTextNode(string tagName) {
+        bool selfClose;
+        mixin(ifCompilesElse("selfClose = prettyPrinter.selfClosingElements", "selfClose = true"));
+
+        if (selfClose && startingTag) {
+            mixin(ifAnyCompiles(expand!"beforeElementEnd"));
+            output.put("/>");
+            startingTag = false;
+        } else {
+            closeOpenThings;
+
+            // mixin(ifCompiles("prettyPrinter.decreaseLevel"));
+            // mixin(ifAnyCompiles(expand!"beforeNode"));
+            output.put("</");
+            output.put(tagName);
+            mixin(ifAnyCompiles(expand!"beforeElementEnd"));
+            output.put(">");
+        }
+        mixin(ifAnyCompiles(expand!"afterNode"));
+    }    
 
     void writeAttribute(string name, string value) {
         assert(startingTag, "Cannot write attribute outside element start");
@@ -398,6 +423,10 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
             writeElement(node);
             break;
 
+        case NodeType.Text:
+            writeNodeText(node);
+            break;
+
         default:
             warningf("name: %s, type: %s", node.getName(), node.getType());
             break;
@@ -411,8 +440,7 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
      *   node = 
      */
     private void writeChildren(Element node) {
-
-        tracef("name: %s, value: %s, type: %s", node.getName(), node.getText(), node.getType());
+        debug(HUNT_DEBUG) tracef("name: %s, type: %s", node.getName(), node.getType());
         for (Element child = node.firstNode(); child; child = child.nextSibling()) {
             writeNode(child);
         }
@@ -425,10 +453,22 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
     }
 
     private void writeElement(Element element) {
-        Element child = element.firstNode();
+        Element child = element.firstNode();         
+        debug(HUNT_DEBUG) tracef("name %s, type: %s, text: %s", element.getName(), element.getType(), element.getText());
+
         if (child is null) {
             writeText(element.getText());
+        } else if(child.getType() == NodeType.Text) {
+            infof("value %s, type: %s", child.getText(), child.getType());
+            
+            startElementWithTextNode(element.getQualifiedName());
+
+            writeAttributes(element);
+            writeText(element.getText());
+
+            closeElementWithTextNode(element.getQualifiedName());
         } else {
+            debug(HUNT_DEBUG) infof("name %s, type: %s", child.getName(), child.getType());
 
             startElement(element.getQualifiedName());
 
@@ -437,5 +477,9 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
 
             closeElement(element.getQualifiedName());
         }
+    }
+
+    private void writeNodeText(Node node) {
+        writeText(node.getText());
     }
 }
