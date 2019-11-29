@@ -79,6 +79,7 @@ struct PrettyPrinters {
         // minimum requirements needed for correctness
         enum string beforeAttributeName = " ";
         enum string betweenPITargetData = " ";
+        bool isSuppressDeclaration = false;
     }
     /++
     +   A pretty-printer that indents the nodes with a tabulation character
@@ -393,11 +394,16 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
     }
 
     void write(Document doc) {
-        tracef("name: %s, type: %s", doc.getName(), doc.getType());
+        debug(HUNT_DEBUG_MORE) {
+            tracef("name: %s, text: %s, type: %s", doc.getName(), 
+                doc.getText(), doc.getType());
+        }
 
-        for (Element child = doc.firstNode(); child; child = child.nextSibling()) {
-            infof("name: %s, value: %s, type: %s", child.getName(),
-                    child.getText(), child.getType());
+        for (Element child = doc.firstNode(); child; child = child.nextSibling()) { 
+            debug(HUNT_DEBUG_MORE) {
+                infof("name: %s, value: %s, type: %s", child.getName(),
+                        child.getText(), child.getType());
+            }
             writeNode(child);
         }
 
@@ -419,10 +425,42 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
             writeText(node.getText());
             break;
 
+        case NodeType.Declaration:
+            // writeNodeText(node);
+            writeDeclaration(node);
+            break;
+
         default:
-            warningf("name: %s, type: %s", node.getName(), node.getType());
+            warningf("Unhandled node, name: %s, type: %s", node.getName(), node.getType());
             break;
         }
+    }
+    
+    /**
+     * <p>
+     * This will write the declaration to the given Writer. Assumes XML version
+     * 1.0 since we don't directly know.
+     * </p>
+     */
+    protected void writeDeclaration(Element node) {
+        // Only print of declaration is not suppressed
+        if (prettyPrinter.isSuppressDeclaration) 
+            return;
+        
+        output.put("<?xml");
+        for (Attribute attribute = node.firstAttribute(); attribute !is null; attribute = attribute.nextAttribute()) {
+            string value = attribute.getValue();
+            mixin(ifAnyCompiles(expand!"beforeAttributeName"));
+            output.put(attribute.getName());
+            mixin(ifAnyCompiles(expand!"afterAttributeName"));
+            output.put("=");
+            mixin(ifAnyCompiles(expand!"beforeAttributeValue"));
+            mixin(ifAnyCompiles(formatAttribute!"value"));            
+        }        
+        
+        mixin(ifAnyCompiles(expand!"beforePIEnd"));
+        output.put("?>");
+        mixin(ifAnyCompiles(expand!"afterNode"));
     }
 
     /** 
@@ -432,7 +470,7 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
      *   node = 
      */
     private void writeChildren(Element node) {
-        debug(HUNT_DEBUG) tracef("name: %s, type: %s", node.getName(), node.getType());
+        debug(HUNT_DEBUG_MORE) tracef("name: %s, type: %s", node.getName(), node.getType());
         for (Element child = node.firstNode(); child; child = child.nextSibling()) {
             writeNode(child);
         }
@@ -446,7 +484,7 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
 
     private void writeElement(Element element) {
         Element child = element.firstNode();         
-        debug(HUNT_DEBUG) tracef("name %s, type: %s, text: %s", element.getName(), element.getType(), element.getText());
+        debug(HUNT_DEBUG_MORE) tracef("name %s, type: %s, text: %s", element.getName(), element.getType(), element.getText());
         
         startElement(element.getQualifiedName());
         writeAttributes(element);
@@ -454,13 +492,15 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
         if(child is null) {
             closeElement(element.getQualifiedName());
         } else if(child.getType() == NodeType.Text) {
-            if(child !is null) {
-                infof("value %s, type: %s", child.getText(), child.getType());
+            debug(HUNT_DEBUG_MORE) {
+                if(child !is null) {
+                    infof("value %s, type: %s", child.getText(), child.getType());
+                }
             }
             writeText(element.getText());
             closeElementWithTextNode(element.getQualifiedName());
         } else {
-            debug(HUNT_DEBUG) infof("name %s, type: %s", child.getName(), child.getType());
+            debug(HUNT_DEBUG_MORE) infof("name %s, type: %s", child.getName(), child.getType());
             writeChildren(element);
             closeElement(element.getQualifiedName());
         }

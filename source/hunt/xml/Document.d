@@ -10,6 +10,8 @@ import hunt.xml.Writer;
 
 import std.array : Appender;
 
+import hunt.logging.ConsoleLogger;
+
 /** 
  * 
  */
@@ -21,7 +23,7 @@ class Document : Element
 
     this(string text) {
         m_type = NodeType.Document;
-        parse(text);
+        parse!(parse_full)(text);
     }
 
     string parse(int Flags = 0)(string stext , Document parent = null)
