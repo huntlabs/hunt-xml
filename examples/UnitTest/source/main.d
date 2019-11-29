@@ -7,10 +7,9 @@ import hunt.logging.ConsoleLogger;
 
 void test1()
 {
-    Document doc = new Document;
     string doc_text = "<single-element/>";
 	
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
     auto node = doc.firstNode();
     assert(node.getName() == "single-element");
     doc.validate();
@@ -18,10 +17,9 @@ void test1()
 
 void test2()
 {   
-    Document doc = new Document;
     string doc_text = "<pfx:single-element/>";
 
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
     auto node = doc.firstNode();
     assert(node.getName() == "single-element");
     doc.validate();
@@ -29,10 +27,9 @@ void test2()
 
 void test3()
 {
-    Document doc = new Document;
     string doc_text = "<single-element attr='one' attr=\"two\"/>";
 
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
     auto node = doc.firstNode();
 
     assert(node.getName() == "single-element");
@@ -41,10 +38,9 @@ void test3()
 
 void test4()
 {
-    Document doc = new Document;
     string doc_text = "<single-element pfx1:attr='one' attr=\"two\"/>";
 
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
     auto node = doc.firstNode();
 
     assert(node.getName() == "single-element");
@@ -56,10 +52,9 @@ void test4()
 
 void test5()
 {
-    Document doc = new Document;
     string doc_text = "<single-element pfx1:attr='one' pfx2:attr=\"two\" xmlns:pfx1='urn:fish' xmlns:pfx2='urn:fish'/>";
 
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
     auto node = doc.firstNode();
 
     assert(node.getName() == "single-element");
@@ -68,9 +63,8 @@ void test5()
 
 void test6()
 {
-    Document doc = new Document;
     string doc_text = "<pfx:single xmlns:pfx='urn:xmpp:example'/>";
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
     auto node = doc.firstNode();
 
     assert(node.getName() == "single");
@@ -79,9 +73,8 @@ void test6()
 
 void test7()
 {
-    Document doc = new Document;
     string doc_text = "<pfx:single xmlns:pfx='urn:xmpp:example'><pfx:firstchild/><child xmlns='urn:potato'/><pfx:child/></pfx:single>";
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
 
     auto node = doc.firstNode();
     assert("single" == node.getName());
@@ -104,10 +97,8 @@ void test7()
 
 void test8()
 {
-    Document doc = new Document;
-
 	string doc_text = "<pfx:single xmlns:pfx='urn:xmpp:example'><pfx:firstchild/><child xmlns='urn:potato'/><pfx:child/></pfx:single>";
-	doc.parse(doc_text);
+	Document doc = Document.parse(doc_text);
 
 	auto node = doc.firstNode();
 	assert("single" == node.getName());
@@ -129,21 +120,20 @@ void test8()
 
 void test10()
 {
-    Document doc = new Document;
     string doc_text = "<pfx:class><student attr='11' attr2='22'><age>10</age><name>zhyc</name></student><student><age>11</age><name>spring</name></student></pfx:class>";
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
 
     auto node = doc.firstNode();
     assert(node.getName() == "class");
     auto student = node.firstNode();
     infof("%s", student.getType());
-    auto attr = student.firstAttribute();
+    Attribute attr = student.firstAttribute();
     assert(attr.getName() == "attr");
-    assert(attr.getText() == "11");
+    assert(attr.getValue() == "11");
 
-    auto attr2 = attr.m_next_attribute;
+    auto attr2 = attr.nextAttribute();
     assert(attr2.getName()=="attr2");
-    assert(attr2.getText() == "22");
+    assert(attr2.getValue() == "22");
     infof("%s", attr2.getType());
 
     assert(student.getName() == "student");
@@ -173,22 +163,21 @@ void test10()
 
 void test11()
 {
-    Document doc = new Document;
     string doc_text = "<pfx:class><student at";
-    doc.parse(doc_text);
+    Document doc = Document.parse(doc_text);
 }
 
 int main()
 {
     // test1();
-    // test2();
+    test2();
     // test3();
     // test4();
     // test5();
     // test6();
     // test7();
     // test8();
-    test10();
+    // test10();
     // test11();
 
     return 0;

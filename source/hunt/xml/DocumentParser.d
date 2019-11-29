@@ -22,9 +22,8 @@ class DocumentParser {
     static Document parse(ParsingFlags Flags = ParsingFlags.Default)(string stext , Document parent = null)
     {
         Document document = new Document();
-        
-        document.removeAllNodes();
-        document.removeAllAttributes();
+        // document.removeAllNodes();
+        // document.removeAllAttributes();
         document.setParent(parent ? parent.firstNode() : null);
         char[] text = cast(char[])stext.dup;
 
