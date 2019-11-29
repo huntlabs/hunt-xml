@@ -25,7 +25,7 @@ class DocumentParser {
         
         document.removeAllNodes();
         document.removeAllAttributes();
-        document.setParent(parent ? parent.m_first_node : null);
+        document.setParent(parent ? parent.firstNode() : null);
         char[] text = cast(char[])stext.dup;
 
         parseBom(text);

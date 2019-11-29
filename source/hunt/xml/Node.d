@@ -28,7 +28,6 @@ import hunt.xml.Element;
 class Node {
     protected NodeType m_type;
     protected string m_name;
-    protected string m_value;
     protected Element m_parent;
 
     /**
@@ -64,30 +63,6 @@ class Node {
      */
     void setName(string name) {
         m_name = name;
-    }
-
-    /**
-     * <p>
-     * Returns the text of this node.
-     * </p>
-     * 
-     * @return the text for this node.
-     */
-    string getText() {
-        return m_value;
-    }
-
-    /**
-     * <p>
-     * Sets the text data of this node or this method will throw an
-     * <code>UnsupportedOperationException</code> if it is read-only.
-     * </p>
-     * 
-     * @param text
-     *            is the new textual value of this node
-     */
-    void setText(string text) {
-        m_value = text;
     }
 
     /**

@@ -9,18 +9,21 @@ import hunt.xml.Node;
 
 import std.string;
 
-class Element : Node
-{
+/** 
+ * 
+ */
+class Element : Node {
 
     protected string m_prefix;
-    string m_xmlns;
-    Element m_first_node;
-    Element m_last_node;
-    Attribute m_first_attribute;
-    Attribute m_last_attribute;
-    Element m_prev_sibling;
-    Element m_next_sibling;
-    string m_contents;
+    protected string m_value;
+    protected string m_xmlns;
+    protected Element m_first_node;
+    protected Element m_last_node;
+    protected Attribute m_first_attribute;
+    protected Attribute m_last_attribute;
+    protected Element m_prev_sibling;
+    protected Element m_next_sibling;
+    protected string m_contents;
 
     this(NodeType type = NodeType.Element) {
         m_type = type;
@@ -69,7 +72,7 @@ class Element : Node
 
             attrname.length = prefix_size + 6;
             freeme = attrname;
-            char[] p1= cast(char[])"xmlns";
+            string p1= "xmlns";
             for(int i = 0 ;i < p1.length ; i++)
                 attrname[i] = p1[i];
 
@@ -85,7 +88,7 @@ class Element : Node
         } else {
             attrname.length = 5;
             freeme = attrname ;
-            char[]  p1=cast(char[])"xmlns";
+            string p1="xmlns";
             for(int i = 0 ;i < p1.length ; i++)
                 attrname[i] = p1[i];
             attrname = freeme;
@@ -96,17 +99,13 @@ class Element : Node
                 node = node.m_parent) {
             Attribute attr = node.firstAttribute(cast(string)attrname);
             if (attr !is null ) {
-                xmlns = cast(char[])attr.m_value.dup;
-                //  if (xmlns) {
-                //      xmlns_size = attr.value_size();
-                //  }
+                xmlns = cast(char[])attr.getValue().dup;
                 break;
             }
         }
         if (xmlns.length == 0) {
             if (prefix.length == 0) {
                 xmlns = cast(char[])"nullstring".dup;
-                // xmlns_size = 0;
             }
         }
 
@@ -148,6 +147,31 @@ class Element : Node
         if(m_prefix.empty())
             return getName();
         return m_prefix ~ "&quot;:&quot;" ~ getName();
+    }
+
+
+    /**
+     * <p>
+     * Returns the text of this node.
+     * </p>
+     * 
+     * @return the text for this node.
+     */
+    string getText() {
+        return m_value;
+    }
+
+    /**
+     * <p>
+     * Sets the text data of this node or this method will throw an
+     * <code>UnsupportedOperationException</code> if it is read-only.
+     * </p>
+     * 
+     * @param text
+     *            is the new textual value of this node
+     */
+    void setText(string text) {
+        m_value = text;
     }
 
     string contents() {
@@ -295,7 +319,7 @@ class Element : Node
         }
     }
 
-    void remove_first_node()
+    void removeFirstNode()
     {
         Element child = m_first_node;
         m_first_node = child.m_next_sibling;
@@ -325,7 +349,7 @@ class Element : Node
     void removeNode(Element where)
     {
         if(where == m_first_node)
-            remove_first_node();
+            removeFirstNode();
         else if(where == m_last_node)
             removeLastNode();
         else
@@ -348,7 +372,7 @@ class Element : Node
     {
         if(name)
         {
-            for(Attribute attribute = m_first_attribute ; attribute ; attribute = attribute.m_next_attribute)
+            for(Attribute attribute = m_first_attribute ; attribute ; attribute = attribute.nextAttribute())
             {
 
                 if(attribute.m_name == name)
@@ -369,7 +393,7 @@ class Element : Node
     {
         if(name)
         {
-            for(Attribute attribute = m_last_attribute ; attribute ; attribute = attribute.m_prev_attribute)
+            for(Attribute attribute = m_last_attribute ; attribute ; attribute = attribute.previousAttribute())
             {
                 if(attribute.m_name == name)
                     return attribute;
@@ -387,35 +411,35 @@ class Element : Node
     {
         if(firstAttribute())
         {
-            attribute.m_next_attribute = m_first_attribute;
-            m_first_attribute.m_prev_attribute = attribute;
+            attribute.nextAttribute = m_first_attribute;
+            m_first_attribute.previousAttribute = attribute;
         }
         else
         {
-            attribute.m_next_attribute = null;
+            attribute.nextAttribute = cast(Attribute)null;
             m_last_attribute = attribute;
         }
         m_first_attribute = attribute;
         attribute.m_parent = this;
-        attribute.m_prev_attribute = null;
+        attribute.previousAttribute = cast(Attribute)null;
     }
 
     void appendAttribute(Attribute attribute)
     {
         if(firstAttribute())
         {
-            attribute.m_prev_attribute = m_last_attribute;
-            m_last_attribute.m_next_attribute = attribute;
+            attribute.previousAttribute = m_last_attribute;
+            m_last_attribute.nextAttribute = attribute;
         }
         else
         {
-            attribute.m_prev_attribute = null;
+            attribute.previousAttribute = cast(Attribute)null;
             m_first_attribute = attribute;
         }
 
         m_last_attribute = attribute;
         attribute.m_parent = this;
-        attribute.m_next_attribute = null;
+        attribute.nextAttribute = cast(Attribute)null;
     }
 
     void insertAttribute(Attribute where , Attribute attribute)
@@ -426,10 +450,10 @@ class Element : Node
             appendAttribute(attribute);
         else
         {
-            attribute.m_prev_attribute = where.m_prev_attribute;
-            attribute.m_next_attribute = where;
-            where.m_prev_attribute.m_next_attribute = attribute;
-            where.m_prev_attribute = attribute;
+            attribute.previousAttribute = where.previousAttribute();
+            attribute.nextAttribute = where;
+            where.previousAttribute().nextAttribute = attribute;
+            where.previousAttribute = attribute;
             attribute.m_parent = this;
         }
     }
@@ -437,9 +461,9 @@ class Element : Node
     void removeFirstAttribute()
     {
         Attribute attribute = m_first_attribute;
-        if(attribute.m_next_attribute)
+        if(attribute.nextAttribute())
         {
-            attribute.m_next_attribute.m_prev_attribute = null;
+            attribute.nextAttribute().previousAttribute = cast(Attribute)null;
         }
         else
         {
@@ -447,16 +471,16 @@ class Element : Node
         }
 
         attribute.m_parent = null;
-        m_first_attribute = attribute.m_next_attribute;
+        m_first_attribute = attribute.nextAttribute();
     }
 
     void removeLastAttribute()
     {
         Attribute attribute = m_last_attribute;
-        if(attribute.m_prev_attribute)
+        if(attribute.previousAttribute())
         {
-            attribute.m_prev_attribute.m_next_attribute = null;
-            m_last_attribute = attribute.m_prev_attribute;
+            attribute.previousAttribute().nextAttribute = cast(Attribute)null;
+            m_last_attribute = attribute.previousAttribute();
         }
         else
             m_first_attribute = null;
@@ -472,15 +496,15 @@ class Element : Node
             removeLastAttribute();
         else
         {
-            where.m_prev_attribute.m_next_attribute = where.m_next_attribute;
-            where.m_next_attribute.m_prev_attribute = where.m_prev_attribute;
+            where.previousAttribute().nextAttribute = where.nextAttribute();
+            where.nextAttribute().previousAttribute = where.previousAttribute();
             where.m_parent = null;
         }
     }
 
     void removeAllAttributes()
     {
-        for(Attribute attribute = firstAttribute() ; attribute ; attribute = attribute.m_next_attribute)
+        for(Attribute attribute = firstAttribute() ; attribute ; attribute = attribute.nextAttribute())
         {
             attribute.m_parent = null;
         }
@@ -499,21 +523,21 @@ class Element : Node
             if(!child.validate())
                 return false;
         }
-        for(Attribute attribute = firstAttribute() ; attribute ; attribute = attribute.m_next_attribute)
+        for(Attribute attribute = firstAttribute() ; attribute ; attribute = attribute.nextAttribute())
         {
             if(attribute.xmlns() == null)
             {    
                 debug(HUNT_DEBUG) trace("Attribute XMLNS unbound");
                 return false;
             }
-            for(Attribute otherattr = firstAttribute() ; otherattr != attribute; otherattr = otherattr.m_next_attribute)
+            for(Attribute otherattr = firstAttribute() ; otherattr != attribute; otherattr = otherattr.nextAttribute())
             {    
                 if(attribute.m_name == otherattr.m_name)
                 {    
                     debug(HUNT_DEBUG) trace("Attribute doubled");
                     return false;
                 }
-                if(attribute.xmlns() == otherattr.xmlns() && attribute.m_local_name == otherattr.m_local_name)
+                if(attribute.xmlns() == otherattr.xmlns() && attribute.localName() == otherattr.localName())
                 {
                     debug(HUNT_DEBUG) trace("Attribute XMLNS doubled");
                     return false;
