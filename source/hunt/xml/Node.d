@@ -92,6 +92,24 @@ class Node {
 
     /**
      * <p>
+     * <code>supportsParent</code> returns true if this node supports the
+     * parent relationship.
+     * </p>
+     * 
+     * <p>
+     * Some XML tree implementations are singly linked and only support downward
+     * navigation through children relationships. The default case is that both
+     * parent and children relationships are supported though for memory and
+     * performance reasons the parent relationship may not be supported.
+     * </p>
+     * 
+     * @return true if this node supports the parent relationship or false it is
+     *         not supported
+     */
+    // bool supportsParent();
+
+    /**
+     * <p>
      * <code>getParent</code> returns the parent <code>Element</code> if
      * this node supports the parent relationship or null if it is the root
      * element or does not support the parent relationship.
@@ -106,7 +124,26 @@ class Node {
      *         the parent relationship is not supported.
      */
     Element getParent() {
-        return m_parent;
+        return cast(Element) m_parent;
+    }
+
+    /**
+     * <p>
+     * <code>setParent</code> sets the parent relationship of this node if the
+     * parent relationship is supported or does nothing if the parent
+     * relationship is not supported.
+     * </p>
+     * 
+     * <p>
+     * This method should only be called from inside an <code>Element</code>
+     * implementation method and is not intended for general use.
+     * </p>
+     * 
+     * @param parent
+     *            is the new parent of this node.
+     */
+    void setParent(Element parent) {
+        m_parent = parent;
     }
 
 }

@@ -1,13 +1,13 @@
 module hunt.xml.Common;
 
+// dfmt off
 /++
 +   An integer indicating which type of node this is.
 +
 +   Note:
 +   Numeric codes up to 200 are reserved to W3C for possible future use.
 +/
-enum NodeType
-{
+enum NodeType {
     Element = 1,    //!< An element node. Name contains element name. Value contains text of first data node.
     Attribute,
     Text,           //!< A data node. Name is empty. Value contains data text.
@@ -24,6 +24,7 @@ enum NodeType
     Declaration    //!< A declaration node. Name and value are empty. Declaration parameters (version, encoding and standalone) are in node attributes.
     //!< Value is unencoded text (used for inserting pre-rendered XML).
 }
+// dfmt on
 
 /** 
  * Parsing flags
@@ -156,15 +157,12 @@ enum ParsingFlags {
 /** 
  * 
  */
-class XmlParsingException : Exception
-{
-    this(string msg , string text)
-    {
+class XmlParsingException : Exception {
+    this(string msg, string text) {
         super(msg ~ " " ~ text);
     }
 
-    this(string msg , char[] text)
-    {
-        super(msg ~ " " ~ cast(string)text.dup);
+    this(string msg, char[] text) {
+        super(msg ~ " " ~ cast(string) text.dup);
     }
 }

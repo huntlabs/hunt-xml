@@ -6,6 +6,10 @@ import std.stdio;
 
 import hunt.logging.ConsoleLogger;
 
+import std.ascii;
+
+import hunt.xml.Internal;
+
 void main() {
 
 	string rootPath = dirName(thisExePath());
@@ -14,8 +18,7 @@ void main() {
 	trace(fullName);
 	string data = readText(fullName);
 	// trace(data);
-	Document document = new Document(data);
-
+	Document document = Document.parse(data);
 
 	auto file = File("output.xml", "w");
 	auto ltw = file.lockingTextWriter;
@@ -23,4 +26,13 @@ void main() {
 	// auto writer = buildWriter(ltw, PrettyPrinters.Minimalizer());
 
 	writer.write(document);
+
+	// string str = document.toString();
+	// trace(str);
+
+	// str = document.toPrettyString();
+	// trace(str);
+
+	// document.toFile("output.xml");
+
 }

@@ -487,11 +487,23 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
 
 }
 
+    // private static void skip(T )(ref char[] text)
+    // {
+
+    //     char[] tmp = text;
+    //     while(tmp.length > 0 && T.test(tmp[0]))
+    //     {
+    //         tmp = tmp[1 .. $];    
+    //     }
+    //     text = tmp;
+    // }
+
+
 void skip(T)(ref char[] text)
 {
     int index = 0;
     int length = cast(int)text.length;
-    while(T.test(text[index]) && index < text.length)
+    while(index < text.length && T.test(text[index]))
         index++;
     text = text[index .. $];
 }

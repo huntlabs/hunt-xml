@@ -38,10 +38,10 @@ class Element : Node
 
     Document document() 
     {
-            Element node = cast(Element)(this);
-            while (node.m_parent)
-                node = node.m_parent;
-            return node.m_type == NodeType.Document ? cast(Document)(node) : null;
+        Element node = cast(Element)(this);
+        while (node.m_parent)
+            node = node.m_parent;
+        return node.m_type == NodeType.Document ? cast(Document)(node) : null;
 
     }
 
@@ -123,8 +123,12 @@ class Element : Node
 	 *
 	 * @return the fully qualified name of the element.
 	 */
-	string getNamespacePrefix() {
+	string namespacePrefix() {
         return m_prefix;
+    }
+
+    void namespacePrefix(string name) {
+        m_prefix = name;
     }
 
     /**
@@ -144,6 +148,14 @@ class Element : Node
         if(m_prefix.empty())
             return getName();
         return m_prefix ~ "&quot;:&quot;" ~ getName();
+    }
+
+    string contents() {
+        return m_contents;
+    }
+
+    void contents(string text) {
+        m_contents = text;
     }
 
     Element firstNode(string name = null , string xmlns = null , bool caseSensitive = true)
