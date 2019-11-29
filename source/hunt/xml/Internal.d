@@ -286,51 +286,9 @@ ubyte[256] lookup_upcase =  [
 
 // dfmt on
 
-// Parsing flags
-enum int parse_no_data_nodes = 0x1;
-
-enum int parse_no_element_values = 0x2;
-
-enum int parse_no_string_terminators = 0x4;
-
-enum int parse_no_entity_translation = 0x8;
-
-enum int parse_no_utf8 = 0x10;
-
-enum int parse_declaration_node = 0x20;
-
-enum int parse_comment_nodes = 0x40;
-
-enum int parse_doctype_node = 0x80;
-
-enum int parse_pi_nodes = 0x100;
-
-enum int parse_validate_closing_tags = 0x200;
-
-enum int parse_trim_whitespace = 0x400;
-
-enum int parse_normalize_whitespace = 0x800;
-
-enum int parse_open_only = 0x1000;
-
-enum int parse_parse_one = 0x2000;
-
-enum int parse_validate_xmlns = 0x4000;
-
-enum int parse_default = 0;
-
-enum int parse_non_destructive = parse_no_string_terminators | parse_no_entity_translation;
-
-enum int parse_fastest = parse_non_destructive | parse_no_data_nodes;
-
-enum int parse_full = parse_declaration_node | parse_comment_nodes | 
-        parse_doctype_node | parse_pi_nodes | parse_validate_closing_tags;
-
-import std.stdio;
-
 void insertCodedCharacter(int Flags)(ref char[] text,  ulong code)
 {
-    if (Flags & parse_no_utf8)
+    if (Flags & ParsingFlags.NoUtf8)
     {
         // Insert 8-bit ASCII character
         // Todo: possibly verify that code is less than 256 and use replacement char otherwise?
@@ -380,9 +338,9 @@ void insertCodedCharacter(int Flags)(ref char[] text,  ulong code)
 static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
 {
     // If entity translation, whitespace condense and whitespace trimming is disabled, use plain skip
-    if (Flags & parse_no_entity_translation &&
-        !(Flags & parse_normalize_whitespace) &&
-        !(Flags & parse_trim_whitespace))
+    if (Flags & ParsingFlags.EntityTranslation &&
+        !(Flags & ParsingFlags.NormalizeWhitespace) &&
+        !(Flags & ParsingFlags.TrimWhitespace))
     {
         skip!(T)(text);
         return text;
@@ -397,7 +355,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
     while (T.test(src[0]))
     {
         // If entity translation is enabled
-        if (!(Flags & parse_no_entity_translation))
+        if (!(Flags & ParsingFlags.EntityTranslation))
         {
             // Test if replacement is needed
             if (src[0] == ('&'))
@@ -502,7 +460,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
         }
 
         // If whitespace condensing is enabled
-        if (Flags & parse_normalize_whitespace)
+        if (Flags & ParsingFlags.NormalizeWhitespace)
         {
             // Test if condensing is needed
             if (WhitespacePred.test(src[0]))

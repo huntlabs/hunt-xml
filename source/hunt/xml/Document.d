@@ -23,10 +23,10 @@ class Document : Element
 
     this(string text) {
         m_type = NodeType.Document;
-        parse!(parse_full)(text);
+        parse!(ParsingFlags.Full)(text);
     }
 
-    string parse(int Flags = 0)(string stext , Document parent = null)
+    string parse(ParsingFlags Flags = ParsingFlags.Default)(string stext , Document parent = null)
     {
         this.removeAllNodes();
         this.removeAllAttributes();
@@ -50,7 +50,7 @@ class Document : Element
                 if(node !is null)
                 {
                     this.appendNode(node);
-                    if(Flags & (parse_open_only | parse_parse_one))
+                    if(Flags & (ParsingFlags.OpenOnly | ParsingFlags.ParseOne))
                     {
                         if(node.m_type == NodeType.Comment)
                             break;
@@ -144,7 +144,7 @@ class Document : Element
     private Element parseCdata(int Flags)(ref char[] text)
     {
         // If CDATA is disabled
-        if (Flags & parse_no_data_nodes)
+        if (Flags & ParsingFlags.DataNodes)
         {
             // Skip until end of cdata
             while (text[0] != ']' || text[1] != ']' || text[2] != '>')
@@ -179,21 +179,21 @@ class Document : Element
     private char parseAndAppendData(int Flags)(Element node, ref char []text, char[] contents_start)
     {
         // Backup to contents start if whitespace trimming is disabled
-        if (!(Flags & parse_trim_whitespace))
+        if (!(Flags & ParsingFlags.TrimWhitespace))
             text = contents_start;
 
         // Skip until end of data
         char [] value = text;
         char []end;
-        if (Flags & parse_normalize_whitespace)
+        if (Flags & ParsingFlags.NormalizeWhitespace)
             end = skipAndExpandCharacterRefs!(TextPred, TextPureWithWsPred, Flags)(text);
         else
             end = skipAndExpandCharacterRefs!(TextPred, TextPureNoWsPred, Flags)(text);
 
         // Trim trailing whitespace if flag is set; leading was already trimmed by whitespace skip after >
-        if (Flags & parse_trim_whitespace)
+        if (Flags & ParsingFlags.TrimWhitespace)
         {
-            if (Flags & parse_normalize_whitespace)
+            if (Flags & ParsingFlags.NormalizeWhitespace)
             {
                 // Whitespace is already condensed to single space characters by skipping function, so just trim 1 char off the end
                 if (end[-1] == ' ')
@@ -209,7 +209,7 @@ class Document : Element
 
         // If characters are still left between end and value (this test is only necessary if normalization is enabled)
         // Create new data node
-        if (!(Flags & parse_no_data_nodes))
+        if (!(Flags & ParsingFlags.DataNodes))
         {
             Element data = new Element(NodeType.Text);
             data.m_value = cast(string)value[0 .. value.length - end.length].dup;
@@ -217,12 +217,12 @@ class Document : Element
         }
 
         // Add data to parent node if no data exists yet
-        if (!(Flags & parse_no_element_values))
+        if (!(Flags & ParsingFlags.EelementValues))
             if (node.m_value.length == 0)
                 node.m_value = cast(string)value[0 ..value.length - end.length];
 
         // Place zero terminator after value
-        if (!(Flags & parse_no_string_terminators))
+        if (!(Flags & ParsingFlags.StringTerminators))
         {
             ubyte ch = text[0];
             end[0] ='\0';
@@ -264,7 +264,7 @@ class Document : Element
             text = text[1 .. $];
             char[] contents = text;
             char[] contents_end = null;
-            if(!(Flags & parse_open_only))
+            if(!(Flags & ParsingFlags.OpenOnly))
             {    
                 contents_end = parseNodeContents!(Flags)(text , element);
             }
@@ -281,7 +281,7 @@ class Document : Element
 
             text = text[1 .. $ ];
 
-            if(Flags & parse_open_only)
+            if(Flags & ParsingFlags.OpenOnly)
                 throw new XmlParsingException("open_only, but closed", text);
         }
         else 
@@ -310,7 +310,7 @@ class Document : Element
                 {
                     retval = text;
                     text = text[2 .. $ ];
-                    if(Flags & parse_validate_closing_tags)
+                    if(Flags & ParsingFlags.ValidateClosingTags)
                     {
                         string closing_name = cast(string)text.dup;
                         skip!(NodeNamePred)(text);
@@ -326,7 +326,7 @@ class Document : Element
                     if(text[0] != '>')
                         throw new XmlParsingException("expected >", text);
                     text = text[1 .. $];
-                    if(Flags & parse_open_only)
+                    if(Flags & ParsingFlags.OpenOnly)
                         throw new XmlParsingException("Unclosed element actually closed.", text);
 
                     return retval;
@@ -334,7 +334,7 @@ class Document : Element
                 else
                 {
                     text = text[1 .. $ ];
-                    if(Element child = parseNode!(Flags & ~parse_open_only)(text))
+                    if(Element child = parseNode!(Flags & ~ParsingFlags.OpenOnly)(text))
                         node.appendNode(child);
                 }
                 break;
@@ -380,7 +380,7 @@ class Document : Element
             text = text[1 .. $ ];
             char[] value = text ;
             char[] end;
-            const int AttFlags = Flags & ~parse_normalize_whitespace;
+            const int AttFlags = Flags & ~ParsingFlags.NormalizeWhitespace;
 
             if(quote == '\'')
                 end = skipAndExpandCharacterRefs!(AttributeValuePred!'\'' , AttributeValuePurePred!('\'') , AttFlags)(text);
@@ -421,7 +421,7 @@ class Document : Element
 
     private Element parseXmlDeclaration(int Flags)(ref char[] text)
     {
-        static if (Flags & parse_declaration_node) {
+        static if (Flags & ParsingFlags.DeclarationNode) {
             // Create declaration
             Element declaration = new Element(NodeType.Declaration);
 
@@ -453,7 +453,7 @@ class Document : Element
     private Element parsePI(int Flags)(ref char[] text)
     {
         // If creation of PI nodes is enabled
-        if (Flags & parse_pi_nodes)
+        if (Flags & ParsingFlags.PiNodes)
         {
             // Create pi node
             Element pi = new Element(NodeType.ProcessingInstruction);
@@ -504,7 +504,7 @@ class Document : Element
 
     private Element parseComment(int Flags)(ref char[] text)
     {
-        static if (Flags & parse_comment_nodes) {
+        static if (Flags & ParsingFlags.CommentNodes) {
             // Remember value start
             auto value = text;
 
@@ -584,7 +584,7 @@ class Document : Element
         }
 
         // If DOCTYPE nodes enabled
-        if (Flags & parse_doctype_node)
+        if (Flags & ParsingFlags.DoctypeNode)
         {
             // Create a new doctype node
             Element doctype = new Element(NodeType.DocumentType);
