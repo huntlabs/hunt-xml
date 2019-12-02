@@ -167,10 +167,26 @@ void test11()
     Document doc = Document.parse(doc_text);
 }
 
+void test12() {
+    Document doc = new Document("Rootxxx");
+
+    Element rootNode = new Element("Root");
+    // rootNode.setParent(doc);
+    doc.appendNode(rootNode);
+
+    rootNode.appendAttribute(new Attribute("version", "1.0"));
+    rootNode.appendNode(new Element("SubNode"));
+
+    tracef(doc.toPrettyString());
+}
+
+
+import test.SerializerTest;
+
 int main()
 {
     // test1();
-    test2();
+    // test2();
     // test3();
     // test4();
     // test5();
@@ -179,6 +195,11 @@ int main()
     // test8();
     // test10();
     // test11();
+
+    // test12();
+
+    SerializerTest serializerTest = new SerializerTest();
+    serializerTest.testAll();
 
     return 0;
 }
