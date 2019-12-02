@@ -18,7 +18,16 @@ import hunt.logging.ConsoleLogger;
  */
 class Document : Element {
     this() {
-        m_type = NodeType.Document;
+        super(NodeType.Document);
+    }
+
+    this(string name) {
+        super(name, NodeType.Document);
+    }    
+
+    static Document load(string fileName) {
+        import std.file;
+        return parse(readText(fileName));
     }
 
     static Document parse(ParsingFlags Flags = ParsingFlags.Full)(string text) {

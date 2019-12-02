@@ -30,6 +30,19 @@ class Node {
     protected string m_name;
     protected Element m_parent;
 
+    this() {
+
+    }
+    
+    this(NodeType type) {
+        m_type = type;
+    }
+
+    this(string name, NodeType type) {
+        m_name = name;
+        m_type = type;
+    }
+
     /**
      * Returns the code according to the type of node. This makes processing
      * nodes polymorphically much easier as the switch statement can be used

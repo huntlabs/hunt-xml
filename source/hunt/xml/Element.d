@@ -7,6 +7,7 @@ import hunt.xml.Common;
 import hunt.xml.Document;
 import hunt.xml.Node;
 
+import std.format;
 import std.string;
 
 /** 
@@ -26,7 +27,11 @@ class Element : Node {
     protected string m_contents;
 
     this(NodeType type = NodeType.Element) {
-        m_type = type;
+        super(type);
+    }
+
+    this(string name, NodeType type = NodeType.Element) {
+        super(name, type);
     }
 
     string xmlns()
@@ -547,4 +552,8 @@ class Element : Node {
         }
         return true;
     }
+
+    override string toString() {
+        return format("name: %s, text: %s", m_name, m_value);
+    }    
 }

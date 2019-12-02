@@ -5,6 +5,7 @@ import hunt.xml.Document;
 import hunt.xml.Element;
 import hunt.xml.Node;
 
+import std.format;
 import std.string;
 
 /** 
@@ -18,9 +19,14 @@ class Attribute : Node
     protected string    m_local_name;
     protected string m_value;
 
+    
     this() {
-        
-        m_type = NodeType.Attribute;
+        super(NodeType.Attribute);
+    }
+
+    this(string name, string value) {
+        super(name, NodeType.Attribute);
+        m_value = value;
     }
 
     Document document() 
@@ -161,5 +167,9 @@ class Attribute : Node
     
     void localName(string name) {
         m_local_name = name;
+    }
+
+    override string toString() {
+        return format("name: %s, value: %s", m_name, m_value);
     }
 }

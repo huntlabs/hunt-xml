@@ -470,7 +470,7 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
      *   node = 
      */
     private void writeChildren(Element node) {
-        debug(HUNT_DEBUG_MORE) tracef("name: %s, type: %s", node.getName(), node.getType());
+        debug(HUNT_DEBUG_MORE) tracef("type: %s, name: %s", node.getType(), node.getName());
         for (Element child = node.firstNode(); child; child = child.nextSibling()) {
             writeNode(child);
         }
@@ -484,7 +484,9 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
 
     private void writeElement(Element element) {
         Element child = element.firstNode();         
-        debug(HUNT_DEBUG_MORE) tracef("name %s, type: %s, text: %s", element.getName(), element.getType(), element.getText());
+        debug(HUNT_DEBUG_MORE) {
+            tracef("type: %s, name: %s, text: %s", element.getType(), element.getName(), element.getText());
+        }
         
         startElement(element.getQualifiedName());
         writeAttributes(element);
@@ -494,13 +496,13 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
         } else if(child.getType() == NodeType.Text) {
             debug(HUNT_DEBUG_MORE) {
                 if(child !is null) {
-                    infof("value %s, type: %s", child.getText(), child.getType());
+                    infof("type: %s, value %s", child.getType(), child.getText());
                 }
             }
-            writeText(element.getText());
+            writeText(child.getText());
             closeElementWithTextNode(element.getQualifiedName());
         } else {
-            debug(HUNT_DEBUG_MORE) infof("name %s, type: %s", child.getName(), child.getType());
+            debug(HUNT_DEBUG_MORE) infof("type: %s, name %s", child.getType(), child.getName());
             writeChildren(element);
             closeElement(element.getQualifiedName());
         }
