@@ -97,7 +97,7 @@ abstract class GreetingSettingsBase : ISettings {
 
     string city;
     
-    string name;
+    string name = "name in base";
 
     abstract Document xmlSerialize();
     // Document xmlSerialize() {
@@ -113,6 +113,11 @@ abstract class GreetingSettingsBase : ISettings {
 
 @XmlRootElement("Greeting-Settings")
 class GreetingSettings : GreetingSettingsBase {
+
+    @XmlAttribute("ID")
+    int id = 1001;
+
+    @XmlElement("Color")
     string _color;
 
     string name;

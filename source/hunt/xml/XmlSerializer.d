@@ -72,8 +72,9 @@ final class XmlSerializer {
 
 
     /* -------------------------------------------------------------------------- */
-    /*                                   toDocument                                   */
+    /*                                  toDocument                                */
     /* -------------------------------------------------------------------------- */
+
 
     /**
      * class
@@ -96,7 +97,7 @@ final class XmlSerializer {
         Document doc = new Document();
         // static if(is(T : XmlSerializable)) {
         //     // XmlSerializable first
-        //     return toDocument!(XmlSerializable, IncludeMeta.no)(value);
+        //     return toXmlElement!(XmlSerializable, IncludeMeta.no)(value);
         // } else {
         //     return serializeObject!(options, T)(value);
         // }
@@ -163,10 +164,11 @@ final class XmlSerializer {
         return rootNode;
     }
 
+
     // /**
     //  * struct
     //  */
-    // static Document toDocument(SerializationOptions options = SerializationOptions(), T)(T value)
+    // static Document toXmlElement(SerializationOptions options = SerializationOptions(), T)(T value)
     //         if (is(T == struct) && !is(T == SysTime)) {
 
     //     static if(is(T == Document)) {
@@ -189,7 +191,7 @@ final class XmlSerializer {
      */
     private static void serializeMember(string member, 
             SerializationOptions options = SerializationOptions.Default, T)
-            (T obj, ref Element result) {
+            (T obj, Element parent) {
 
         // debug(HUNT_DEBUG_MORE) pragma(msg, "\tfield=" ~ member);
 
@@ -219,53 +221,64 @@ final class XmlSerializer {
                 version(HUNT_DEBUG) warning("skipped a interface member(not XmlSerializable): " ~ member);
             } else {
                 auto m = __traits(getMember, obj, member);
-                Element element = serializeMember!(options)(m);
-
-                debug(HUNT_DEBUG_MORE) {
-                    if(element is null)
-                        tracef("member: %s, element: null", member);
-                    else
-                        tracef("member: %s, element: { %s }", member, element.toString());
+                alias xmlAttributeUDAs = getUDAs!(currentMember, XmlAttribute);
+                alias xmlElementUDAs = getUDAs!(currentMember, XmlElement);
+                static if(xmlAttributeUDAs.length > 0 && xmlElementUDAs.length > 0) {
+                    static assert(false, "Cna't use both XmlAttribute and XmlElement at one time");
                 }
 
-                bool canSetValue = true;
-                if(element is null) {
-                    static if(options.ignoreNull) {
-                        canSetValue = false;
-                    }
-                }
-
-                if (canSetValue) {
-                        // trace(result);
-                    // FIXME: Needing refactor or cleanup -@zhangxueping at 2019-12-02T14:09:36+08:00
-                    // 
-                    // if(result !is null) {
-                    //     auto jsonItemPtr = member in result;
-                    //     if(jsonItemPtr !is null) {
-                    //         version(HUNT_DEBUG) warning("overrided field: " ~ member);
-                    //     }
-                    // }
-                    // element.setName(member);
-                    Element nameElement = new Element(member);
-                    if(element !is null)
-                    nameElement.appendNode(element);
-                    result.appendNode(nameElement);
+                static if(xmlAttributeUDAs.length > 0) {
+                    enum ElementName = xmlAttributeUDAs[0].name;
+                    enum elementName = (ElementName.length == 0) ? member : ElementName;
+                    serializeMemberAsAttribute!(options, member, elementName)(m, parent);
+                } else static if(xmlElementUDAs.length > 0) {
+                    enum ElementName = xmlElementUDAs[0].name;
+                    enum elementName = (ElementName.length == 0) ? member : ElementName;
+                    serializeMemberAsElement!(options, member, elementName)(m, parent);
+                } else {
+                    enum elementName = member;
+                    serializeMemberAsElement!(options, member, elementName)(m, parent);
                 }
             }
         } else {
             debug(HUNT_DEBUG_MORE) tracef("skipped member, name: %s", member);
         }
     }
+    
 
-    private static Element serializeMember(SerializationOptions options, T)(T m) {
-        Element result;
+    private static void serializeMemberAsAttribute(SerializationOptions options, 
+            string member, string elementName, T)(T m, Element parent) {
+        //
+        Attribute attribute;
+        static if(isSomeString!T) {
+            attribute = new Attribute(elementName, m);
+            parent.appendAttribute(attribute);
+        } else static if (isBasicType!(T)) {
+            attribute = new Attribute(elementName, m.to!string());
+            parent.appendAttribute(attribute);
+        } else {
+            static assert(false, "Only basic type or string can be set as an attribute: " ~ T.stringof);
+        }
+
+        debug(HUNT_DEBUG_MORE) {
+            if(attribute is null)
+                tracef("member: %s, attribute: null", member);
+            else
+                tracef("member: %s, attribute: { %s }", member, attribute.toString());
+        }
+    }
+
+    private static void serializeMemberAsElement(SerializationOptions options, 
+            string member, string elementName, T)(T m, Element parent) {
+
+        Element element;
         enum depth = options.depth;
         // static if(is(T == interface) && is(T : XmlSerializable)) {
-        //     static if(depth == -1 || depth > 0) { result = toDocument!(XmlSerializable)(m);}
+        //     static if(depth == -1 || depth > 0) { result = toXmlElement!(XmlSerializable)(m);}
         // } else static if(is(T == SysTime)) {
-        //     result = toDocument!SysTime(m);
+        //     result = toXmlElement!SysTime(m);
         // // } else static if(isSomeString!T) {
-        // //     result = toDocument(m);
+        // //     result = toXmlElement(m);
         // } else static if(is(T == class)) {
         //     if(m !is null) {
         //         result = serializeObjectMember!(options)(m);
@@ -276,7 +289,7 @@ final class XmlSerializer {
         //     if(m is null) {
         //         static if(!options.ignoreNull) {
         //             static if(isSomeString!T) {
-        //                 result = toDocument(m);
+        //                 result = toXmlElement(m);
         //             } else {
         //                 result = Document[].init;
         //             }
@@ -286,15 +299,44 @@ final class XmlSerializer {
         //             // class[] obj; struct[] obj;
         //             result = serializeObjectMember!(options)(m);
         //         } else {
-        //             result = toDocument(m);
+        //             result = toXmlElement(m);
         //         }
         //     }
         // } else {
-        //     result = toDocument(m);
+        //     result = toXmlElement(m);
         // }
 
+        element = toTextElement(m);
+        
+        debug(HUNT_DEBUG_MORE) {
+            if(element is null)
+                tracef("member: %s, element: null", member);
+            else
+                tracef("member: %s, element: { %s }", member, element.toString());
+        }
 
-        return toTextElement(m);
+        bool canSetValue = true;
+        if(element is null) {
+            static if(options.ignoreNull) {
+                canSetValue = false;
+            }
+        }
+
+        if (canSetValue) {
+            // FIXME: Needing refactor or cleanup -@zhangxueping at 2019-12-02T14:09:36+08:00
+            // 
+            // if(parent !is null) {
+            //     auto jsonItemPtr = member in parent;
+            //     if(jsonItemPtr !is null) {
+            //         version(HUNT_DEBUG) warning("overrided field: " ~ member);
+            //     }
+            // }
+            Element nameElement = new Element(elementName);
+            if(element !is null) {
+                nameElement.appendNode(element);
+            }
+            parent.appendNode(nameElement);
+        }
     }
 
     // private static Document serializeObjectMember(SerializationOptions options = 
@@ -302,9 +344,9 @@ final class XmlSerializer {
     //     enum depth = options.depth;
     //     static if(depth > 0) {
     //         enum SerializationOptions memeberOptions = options.depth(options.depth-1);
-    //         return toDocument!(memeberOptions)(m);
+    //         return toXmlElement!(memeberOptions)(m);
     //     } else static if(depth == -1) {
-    //         return toDocument!(options)(m);
+    //         return toXmlElement!(options)(m);
     //     } else {
     //         return Document.init;
     //     }
@@ -313,25 +355,25 @@ final class XmlSerializer {
     // /**
     //  * SysTime
     //  */
-    // static Document toDocument(T)(T value, bool asInteger=true) if(is(T == SysTime)) {
+    // static Document toXmlElement(T)(T value, bool asInteger=true) if(is(T == SysTime)) {
     //     if(asInteger)
     //         return Document(value.stdTime()); // STD time
     //     else 
     //         return Document(value.toString());
     // }
 
-    // // static Nullable!Document toDocument(N : Nullable!T, T)(N value) {
-    // //     return value.isNull ? Nullable!Document() : Nullable!Document(toDocument!T(value.get()));
+    // // static Nullable!Document toXmlElement(N : Nullable!T, T)(N value) {
+    // //     return value.isNull ? Nullable!Document() : Nullable!Document(toXmlElement!T(value.get()));
     // // }
 
-    // // static Document toDocument(T)(T value) if (is(T == Document)) {
+    // // static Document toXmlElement(T)(T value) if (is(T == Document)) {
     // //     return value;
     // // }
 
     /**
      * XmlSerializable
      */
-    static Document toDocument(T, IncludeMeta includeMeta = IncludeMeta.yes)
+    static Document toXmlElement(T, IncludeMeta includeMeta = IncludeMeta.yes)
                     (T value) if (is(T == interface) && is(T : XmlSerializable)) {
         debug(HUNT_DEBUG_MORE) {
             infof("======== current type: interface = %s, Object = %s", 
@@ -378,7 +420,7 @@ final class XmlSerializer {
     // /**
     //  * string[]
     //  */
-    // static Document toDocument(T)(T value)
+    // static Document toXmlElement(T)(T value)
     //         if (is(T : U[], U) && (isBasicType!U || isSomeString!U)) {
     //     return Document(value);
     // }
@@ -386,12 +428,12 @@ final class XmlSerializer {
     // /**
     //  * class[]
     //  */
-    // static Document toDocument(SerializationOptions options = SerializationOptions.Normal, 
+    // static Document toXmlElement(SerializationOptions options = SerializationOptions.Normal, 
     //         T : U[], U) (T value) if(is(T : U[], U) && is(U == class)) {
     //     if(value is null) {
     //         return Document(Document[].init);
     //     } else {
-    //         return Document(value.map!(item => toDocument!(options)(item))()
+    //         return Document(value.map!(item => toXmlElement!(options)(item))()
     //                 .map!(json => json.isNull ? Document(null) : json).array);
     //     }
     // }
@@ -400,16 +442,16 @@ final class XmlSerializer {
     // /**
     //  * struct[]
     //  */
-    // static Document toDocument(SerializationOptions options = SerializationOptions.Normal,
+    // static Document toXmlElement(SerializationOptions options = SerializationOptions.Normal,
     //         T : U[], U)(T value) if(is(U == struct)) {
     //     if(value is null) {
     //         return Document(Document[].init);
     //     } else {
     //         static if(is(U == SysTime)) {
-    //             return Document(value.map!(item => toDocument(item))()
+    //             return Document(value.map!(item => toXmlElement(item))()
     //                     .map!(json => json.isNull ? Document(null) : json).array);
     //         } else {
-    //             return Document(value.map!(item => toDocument!(options)(item))()
+    //             return Document(value.map!(item => toXmlElement!(options)(item))()
     //                     .map!(json => json.isNull ? Document(null) : json).array);
     //         }
     //     }
@@ -418,17 +460,17 @@ final class XmlSerializer {
     // /**
     //  * U[K]
     //  */
-    // static Document toDocument(SerializationOptions options = SerializationOptions.Normal,
+    // static Document toXmlElement(SerializationOptions options = SerializationOptions.Normal,
     //         T : U[K], U, K)(T value) {
     //     auto result = Document();
 
     //     foreach (key; value.keys) {
     //         static if(is(U == SysTime)) {
-    //             auto json = toDocument(value[key]);
+    //             auto json = toXmlElement(value[key]);
     //         } else static if(is(U == class) || is(U == struct) || is(U == interface)) {
-    //             auto json = toDocument!(options)(value[key]);
+    //             auto json = toXmlElement!(options)(value[key]);
     //         } else {
-    //             auto json = toDocument(value[key]);
+    //             auto json = toXmlElement(value[key]);
     //         }
     //         result[key.to!string] = json.isNull ? Document(null) : json;
     //     }
