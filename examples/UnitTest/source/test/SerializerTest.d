@@ -16,8 +16,8 @@ class SerializerTest {
 
     void testAll() {
         // testBasic();
-        testGetAsClass01();
-        // testXmlSerializable();
+        // testGetAsClass01();
+        testXmlSerializable();
     }
 
     void testBasic() {
@@ -25,78 +25,107 @@ class SerializerTest {
     }
 
 
-    @Test void testGetAsClass01() {
-        Greeting gt = new Greeting();
-        gt.setPrivateMember("private member");
-        gt.id = 123;
-        gt.content = "Hello, world!";
-        gt.creationTime = Clock.currTime;
-        // gt.currentTime = Clock.currStdTime;
-        // gt.setColor("Red");
-        gt.setContent("Hello");
-        Document xv = XmlSerializer.toDocument(gt);
-        trace(xv.toPrettyString());
+    // @Test void testGetAsClass01() {
+    //     Greeting gt = new Greeting();
+    //     gt.setPrivateMember("private member");
+    //     gt.id = 123;
+    //     gt.content = "Hello, world!";
+    //     gt.creationTime = Clock.currTime;
+    //     // gt.currentTime = Clock.currStdTime;
+    //     // gt.setColor("Red");
+    //     gt.setContent("Hello");
+    //     Document xv = XmlSerializer.toDocument(gt);
+    //     trace(xv.toPrettyString());
 
-        // Greeting gt1 = XmlSerializer.fromXml!(Greeting)(jv);
-        // // trace("gt====>", gt, "====");
-        // // trace("gt1====>", gt1, "====");
-        // assert(gt1 !is null);
-        // // trace(gt1.getContent());
+    //     // Greeting gt1 = XmlSerializer.fromXml!(Greeting)(jv);
+    //     // // trace("gt====>", gt, "====");
+    //     // // trace("gt1====>", gt1, "====");
+    //     // assert(gt1 !is null);
+    //     // // trace(gt1.getContent());
 
-        // assert(gt.getPrivateMember == gt1.getPrivateMember);
-        // assert(gt.id == gt1.id);
-        // assert(gt.content == gt1.content);
-        // assert(gt.creationTime == gt1.creationTime);
-        // assert(gt.currentTime != gt1.currentTime);
-        // assert(0 == gt1.currentTime);
-        // assert(gt.getColor() == gt1.getColor());
-        // assert(gt1.getColor() == "Red");
-        // assert(gt.getContent() == gt1.getContent());
-        // assert(gt1.getContent() == "Hello");
+    //     // assert(gt.getPrivateMember == gt1.getPrivateMember);
+    //     // assert(gt.id == gt1.id);
+    //     // assert(gt.content == gt1.content);
+    //     // assert(gt.creationTime == gt1.creationTime);
+    //     // assert(gt.currentTime != gt1.currentTime);
+    //     // assert(0 == gt1.currentTime);
+    //     // assert(gt.getColor() == gt1.getColor());
+    //     // assert(gt1.getColor() == "Red");
+    //     // assert(gt.getContent() == gt1.getContent());
+    //     // assert(gt1.getContent() == "Hello");
 
-        // Document parametersInXml;
-        // parametersInXml["name"] = "Hunt";
-        // string parameterModel = XmlSerializer.getItemAs!(string)(parametersInXml, "name");
-        // assert(parameterModel == "Hunt");
-    }
-
-
-    // void testXmlSerializable() {
-    //     GreetingSettings settings = new GreetingSettings();
-    //     settings.name = "hunt";
-
-    //     Document xml_class = XmlSerializer.toDocument(settings);
-    //     info(xml_class.toPrettyString());
-    //     // auto itemPtr = MetaTypeName in xml_class;
-    //     // assert(itemPtr is null);
-
-    //     // // 
-    //     // ISettings isettings = settings;
-    //     // Document xml_interface = XmlSerializer.toXml(isettings);
-    //     // info(xml_interface.toPrettyString());
-
-    //     // itemPtr = MetaTypeName in xml_interface;
-    //     // assert(itemPtr !is null);
-
-    //     // //
-    //     // GreetingSettingsBase settingBase = settings;
-    //     // Document xml_base = XmlSerializer.toXml(settingBase);
-    //     // info(xml_base.toPrettyString());
+    //     // Document parametersInXml;
+    //     // parametersInXml["name"] = "Hunt";
+    //     // string parameterModel = XmlSerializer.getItemAs!(string)(parametersInXml, "name");
+    //     // assert(parameterModel == "Hunt");
+    // }
 
 
-    //     // itemPtr = MetaTypeName in xml_base;
-    //     // assert(itemPtr !is null);
-    // }    
+    void testXmlSerializable() {
+        Element rootNode;
+        Element element;
+        Attribute attribute;
+
+        GreetingSettings settings = new GreetingSettings();
+        settings.name = "hunt";
+
+        /* ---------------------------------- class --------------------------------- */
+
+        Document xml_class = XmlSerializer.toDocument(settings);
+        // info(xml_class.toPrettyString());
+
+        rootNode = xml_class.firstNode();
+        attribute = rootNode.firstAttribute(MetaTypeName);
+        assert(attribute is null);
+        element = rootNode.firstNode("Color");
+        assert(element !is null);
+
+        /* -------------------------------- interface ------------------------------- */
+
+        ISettings isettings = settings;
+        Document xml_interface = XmlSerializer.toDocument(isettings);
+        // info(xml_interface.toPrettyString());
+
+        rootNode = xml_interface.firstNode();
+        attribute = rootNode.firstAttribute(MetaTypeName);
+        assert(attribute !is null);
+        // trace(attribute.toString());
+
+        element = rootNode.firstNode("Color");
+        assert(element !is null);
+        // trace(element.toString());
+
+
+        /* ------------------------------- base class ------------------------------- */
+
+        GreetingSettingsBase settingBase = settings;
+        Document xml_base = XmlSerializer.toDocument(settingBase);
+        info(xml_base.toPrettyString());
+
+        rootNode = xml_interface.firstNode();
+        attribute = rootNode.firstAttribute(MetaTypeName);
+        assert(attribute !is null);
+        // trace(attribute.toString());
+
+        element = rootNode.firstNode("Color");
+        assert(element !is null);
+        // trace(element.toString());
+    }    
 
 }
 
 
-
+/** 
+ * 
+ */
 interface ISettings : XmlSerializable {
     string color();
     void color(string c);
 }
 
+/** 
+ * 
+ */
 @XmlRootElement("Greeting-SettingsBase")
 abstract class GreetingSettingsBase : ISettings {
 
@@ -104,12 +133,12 @@ abstract class GreetingSettingsBase : ISettings {
     
     string name = "name in base";
 
-    abstract Document xmlSerialize();
-    // Document xmlSerialize() {
-    //     Document v;
-    //     v["_city"] = city;
-    //     return v;
-    // }
+    // abstract Element xmlSerialize();
+    Element xmlSerialize() {
+        Element result = new Element(typeof(this).stringof);
+        result.appendNode(XmlSerializer.toXmlElement("_city", city));
+        return result;
+    }
 
     void xmlDeserialize(Document value) {
         // do nothing
@@ -143,16 +172,27 @@ class GreetingSettings : GreetingSettingsBase {
         this._color = c;
     }
 
-    override Document xmlSerialize() {
-        return null;
+    override Element xmlSerialize() {
+        
+        // Method 1
         // return XmlSerializer.serializeObject!(SerializationOptions.Default.traverseBase(false))(this);
-        // return XmlSerializer.serializeObject!(SerializationOptions.Default)(this);
+        return XmlSerializer.serializeObject!(SerializationOptions.Default)(this);
 
-        // Document v = super.xmlSerialize();
-        // Document v;
-        // v["_city"] = city;
-        // v["_color"] = _color;
-        // return v;        
+        // // Method 2
+        // Element result = super.xmlSerialize();
+        // result.setName(typeof(this).stringof);
+        // // result.appendNode(XmlSerializer.toXmlElement("_city", city));
+        
+        // import std.traits;
+        // alias xmlAttributeUDAs = getUDAs!(_color, XmlElement);
+        // static if(xmlAttributeUDAs.length > 0) {
+        //     enum ColorName = xmlAttributeUDAs[0].name;
+        // } else {
+        //     enum ColorName = "_color";
+        // }
+
+        // result.appendNode(XmlSerializer.toXmlElement(ColorName, _color));
+        // return result;        
     }
     
     override void xmlDeserialize(Document value) {
@@ -163,8 +203,9 @@ class GreetingSettings : GreetingSettingsBase {
 }
 
 
-
-
+/** 
+ * 
+ */
 class GreetingBase {
     int id;
     private string content;
@@ -191,9 +232,12 @@ class GreetingBase {
     }
 }
 
+/** 
+ * 
+ */
 class Greeting : GreetingBase {
     private string privateMember;
-    // private ISettings settings;
+    private ISettings settings;
     Object.Monitor skippedMember;
 
     alias TestHandler = void delegate(string); 
@@ -227,7 +271,7 @@ class Greeting : GreetingBase {
 
     private void initialization() {
 
-        // settings = new GreetingSettings();
+        settings = new GreetingSettings();
 
         times = new SysTime[2];
         times[0] = Clock.currTime;

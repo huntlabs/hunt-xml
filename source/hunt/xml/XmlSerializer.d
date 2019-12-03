@@ -56,7 +56,7 @@ enum MetaTypeName = "__metatype__";
  */
 interface XmlSerializable {
 
-    Document xmlSerialize();
+    Element xmlSerialize();
 
     void xmlDeserialize(Document value);
 }
@@ -92,14 +92,33 @@ final class XmlSerializer {
             tracef("%s, T: %s",
                 options, T.stringof);
         }
+        
         Document doc = new Document();
-        // static if(is(T : XmlSerializable)) {
-        //     // XmlSerializable first
-        //     return toXmlElement!(XmlSerializable, IncludeMeta.no)(value);
-        // } else {
-        //     return serializeObject!(options, T)(value);
-        // }
-        Element rootNode = serializeObject!(options, T)(value);
+        Element rootNode;
+        static if(is(T : XmlSerializable)) {
+            // Using XmlSerializable first
+            rootNode = toXmlElement!(XmlSerializable, IncludeMeta.no)("", value);
+        } else {
+            rootNode = serializeObject!(options, T)(value);
+        }
+
+        doc.appendNode(rootNode);
+        return doc;
+    }
+
+    
+    /**
+     * XmlSerializable
+     */
+    static Document toDocument(IncludeMeta includeMeta = IncludeMeta.yes, T)
+            (T value) if (is(T == interface) && is(T : XmlSerializable)) {
+        
+        debug(HUNT_DEBUG_MORE) {
+            info("======== current type: interface " ~ T.stringof);
+        }
+        
+        Document doc = new Document();
+        Element  rootNode = toXmlElement!(XmlSerializable, includeMeta)("", value);
         doc.appendNode(rootNode);
         return doc;
     }
@@ -267,12 +286,14 @@ final class XmlSerializer {
 
     private static void serializeMemberAsElement(SerializationOptions options, 
             string member, string elementName, T)(T m, Element parent) {
+        
+        assert(parent !is null, "The parent can't be null");
 
         Element element;
         enum depth = options.depth;
         
         static if(is(T == interface) && is(T : XmlSerializable)) {
-            // static if(depth == -1 || depth > 0) { element = toXmlElement!(XmlSerializable)(m);}
+            static if(depth == -1 || depth > 0) { element = toXmlElement!(XmlSerializable)(elementName, m); }
         } else static if(is(T == SysTime)) {
             element = toXmlElement!SysTime(elementName, m);
         } else static if(isSomeString!T) {
@@ -322,24 +343,13 @@ final class XmlSerializer {
         }
 
         if (canSetValue) {
-            // FIXME: Needing refactor or cleanup -@zhangxueping at 2019-12-02T14:09:36+08:00
-            // 
-            // if(parent !is null) {
-            //     auto jsonItemPtr = member in parent;
-            //     if(jsonItemPtr !is null) {
-            //         version(HUNT_DEBUG) warning("overrided field: " ~ member);
-            //     }
-            // }
+            auto existNode = parent.firstNode(elementName);
+            if(existNode !is null) {
+                version(HUNT_DEBUG) warning("overrided field: " ~ member);
+            }
+
             if(element !is null) {
                 parent.appendNode(element);
-                // if(element.getType == NodeType.Text) {
-                //     Element nameElement = new Element(elementName);
-                //     nameElement.appendNode(element);
-                //     parent.appendNode(nameElement);
-                // }
-                // else {
-                //     parent.appendNode(element);
-                // }
             } else {
                 warningf("skipping null element for: %s %s", T.stringof, member);
             }
@@ -376,36 +386,36 @@ final class XmlSerializer {
         return result;
     }
 
-    // // static Nullable!Document toXmlElement(N : Nullable!T, T)(N value) {
-    // //     return value.isNull ? Nullable!Document() : Nullable!Document(toXmlElement!T(value.get()));
-    // // }
-
-    // // static Document toXmlElement(T)(T value) if (is(T == Document)) {
-    // //     return value;
-    // // }
 
     /**
      * XmlSerializable
      */
-    static Document toXmlElement(T, IncludeMeta includeMeta = IncludeMeta.yes)
-                    (T value) if (is(T == interface) && is(T : XmlSerializable)) {
+    static Element toXmlElement(T, IncludeMeta includeMeta = IncludeMeta.yes)
+                    (string name, T value) if (is(T == interface) && is(T : XmlSerializable)) {
         debug(HUNT_DEBUG_MORE) {
             infof("======== current type: interface = %s, Object = %s", 
                 T.stringof, typeid(cast(Object)value).name);
         }
 
-        Document v = value.xmlSerialize();
+        Element result = value.xmlSerialize();
+        if(result is null) {
+            return null;
+        }
+
+        if(!name.empty())
+            result.setName(name);
+        
         static if(includeMeta) {
-            auto itemPtr = MetaTypeName in v;
+            Attribute attribute = new Attribute(MetaTypeName, typeid(cast(Object)value).name);
+            result.appendAttribute(attribute);
+            // auto itemPtr = MetaTypeName in v;
             // FIXME: Needing refactor or cleanup -@zhangxueping at 2019-12-02T15:32:27+08:00
             // 
             // if(itemPtr is null)
             //     v[MetaTypeName] = typeid(cast(Object)value).name;
-        }
-        // TODO: Tasks pending completion -@zhangxueping at 2019-09-28T07:45:09+08:00
-        // remove the MetaTypeName memeber
-        debug(HUNT_DEBUG_MORE) trace(v.toString());
-        return v;
+        } 
+        
+        return result;
     }
 
     /** 
