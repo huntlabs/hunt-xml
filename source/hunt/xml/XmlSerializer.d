@@ -261,6 +261,27 @@ final class XmlSerializer {
         }
     }
     
+    /** 
+     * Object member
+     * 
+     * Params:
+     *   name = 
+     *   m = 
+     * Returns: 
+     */
+    private static Element serializeObjectMember(SerializationOptions options = 
+            SerializationOptions.Default, T)(string name, ref T m) {
+        enum depth = options.depth;
+        static if(depth > 0) {
+            enum SerializationOptions memeberOptions = options.depth(options.depth-1);
+            return toXmlElement!(memeberOptions)(name, m);
+        } else static if(depth == -1) {
+            return toXmlElement!(options)(name, m);
+        } else {
+            warningf("Reach at the specified depth: %d", depth);
+            return null;
+        }
+    }
 
     private static void serializeMemberAsAttribute(SerializationOptions options, 
             string member, string elementName, T)(T m, Element parent) {
@@ -295,7 +316,7 @@ final class XmlSerializer {
         static if(is(T == interface) && is(T : XmlSerializable)) {
             static if(depth == -1 || depth > 0) { element = toXmlElement!(XmlSerializable)(elementName, m); }
         } else static if(is(T == SysTime)) {
-            element = toXmlElement!SysTime(elementName, m);
+            element = toXmlElement(elementName, m);
         } else static if(isSomeString!T) {
             element = toXmlElement(elementName, m);
         } else static if(is(T == class)) {
@@ -356,31 +377,24 @@ final class XmlSerializer {
         }
     }
 
-    private static Element serializeObjectMember(SerializationOptions options = 
-            SerializationOptions.Default, T)(string name, ref T m) {
-        enum depth = options.depth;
-        static if(depth > 0) {
-            enum SerializationOptions memeberOptions = options.depth(options.depth-1);
-            return toXmlElement!(memeberOptions)(name, m);
-        } else static if(depth == -1) {
-            return toXmlElement!(options)(name, m);
-        } else {
-            warningf("Reach at the specified depth: %d", depth);
-            return null;
-        }
-    }
-
     /**
      * SysTime
      */
-    static Element toXmlElement(T)(string name, T value, bool asInteger=true) if(is(T == SysTime)) {
+    static Element toXmlElement(string name, ref SysTime value, bool asInteger=true) {
         Element result = new Element(name);
         Element txt = new Element(NodeType.Text);
 
-        if(asInteger)
+        string timeFormat = "std";
+
+        if(asInteger) {
             txt.setText(value.stdTime().to!string()); // STD time
-        else 
+        } else  {
+            timeFormat = "simple";
             txt.setText(value.toString());
+        }
+
+        Attribute attribute = new Attribute("format", timeFormat);
+        result.appendAttribute(attribute);
 
         result.appendNode(txt);
         return result;
@@ -457,13 +471,6 @@ final class XmlSerializer {
         
         Element roolElement = new Element(name);
         if(value !is null) {
-            // Element[] elements = value.map!(item => serializeObject!(options)(item))().array;
-
-            // foreach(Element el; elements) {
-            //     if(el !is null) {
-            //         roolElement.appendNode(el);
-            //     }
-            // }
             value.map!(item => serializeObject!(options)(item))
                  .each!((item) {
                         if(item !is null)  roolElement.appendNode(item);
@@ -492,12 +499,9 @@ final class XmlSerializer {
                 //             if(item !is null)  roolElement.appendNode(el);
                 //         })();
                 warningf("TODO: SysTime[] %s", name);
-            } else {
-                // return Document(value.map!(item => toXmlElement!(options)(item))()
-                //         .map!(json => json.isNull ? Document(null) : json).array);
-                
+            } else {                
                 value.map!(item => serializeObject!(options)(item))()
-                    .map!((item) {
+                    .each!((item) {
                             if(item !is null)  roolElement.appendNode(el);
                         })();
             }
@@ -506,26 +510,42 @@ final class XmlSerializer {
         return roolElement;
     }
 
-    // /**
-    //  * U[K]
-    //  */
-    // static Document toXmlElement(SerializationOptions options = SerializationOptions.Normal,
-    //         T : U[K], U, K)(T value) {
-    //     auto result = Document();
+    /**
+     * V[K]
+     */
+    static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal,
+            T : V[K], V, K)(string name, T value) {
+        Element result = new Element(name);
 
-    //     foreach (key; value.keys) {
-    //         static if(is(U == SysTime)) {
-    //             auto json = toXmlElement(value[key]);
-    //         } else static if(is(U == class) || is(U == struct) || is(U == interface)) {
-    //             auto json = toXmlElement!(options)(value[key]);
-    //         } else {
-    //             auto json = toXmlElement(value[key]);
-    //         }
-    //         result[key.to!string] = json.isNull ? Document(null) : json;
-    //     }
+        foreach (ref K key; value.keys) {
 
-    //     return result;
-    // }
+            static if(isSomeString!K) {
+                string keyName = key;
+            } else {
+                string keyName = key.to!string();
+            }
+
+            static if(is(V == SysTime)) {
+                Element element = toXmlElement(keyName, value[key]);
+                result.appendNode(element);
+
+            } else static if(is(V == class) || is(V == struct) || is(V == interface)) {
+                Element element = toXmlElement!(options)(keyName, value[key]);
+                result.appendNode(element);
+
+            } else {
+                static if(isSomeString!V) {
+                    Attribute attribute = new Attribute(keyName, value[key]);
+                } else {
+                    Attribute attribute = new Attribute(keyName, value[key].to!string());
+                }
+                result.appendAttribute(attribute);
+            }
+
+        }
+
+        return result;
+    }
 }
 
 
