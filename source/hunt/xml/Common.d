@@ -166,3 +166,13 @@ class XmlParsingException : Exception {
         super(msg ~ " " ~ cast(string) text.dup);
     }
 }
+
+
+/** 
+ * 
+ */
+class XmlException : Exception {
+    this(string msg) {
+        super(msg);
+    }
+}

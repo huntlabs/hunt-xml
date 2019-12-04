@@ -554,6 +554,6 @@ class Element : Node {
     }
 
     override string toString() {
-        return format("name: %s, text: %s", m_name, m_value);
+        return format("type: %s, name: %s, text: %s", m_type, m_name, m_value);
     }    
 }

@@ -58,7 +58,7 @@ interface XmlSerializable {
 
     Element xmlSerialize();
 
-    void xmlDeserialize(Document value);
+    void xmlDeserialize(Element value);
 }
 
 
@@ -67,6 +67,460 @@ interface XmlSerializable {
  */
 final class XmlSerializer {
 
+    static T fromDocument(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
+            (string xml, T defaultValue = T.init) if (is(T == class)) {
+        return fromDocument!(T, traverseBase, canThrow)(Document.parse(xml), defaultValue);
+    }
+
+    static T fromDocument(T, bool canThrow = false)
+            (string xml, T defaultValue = T.init) if (!is(T == class)) {
+        return fromDocument!(T, canThrow)(Document.parse(xml), defaultValue);
+    }
+
+    /**
+     *  Converts a `Document` to an object of type `T` by filling its fields with the Document's elements.
+     */
+    static T fromDocument(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
+            (Document doc, T defaultValue = T.init) if (is(T == class) && __traits(compiles, new T())) { // is(typeof(new T()))
+
+        assert(doc !is null);
+        Element element = doc.firstNode();
+        return fromDocument!(T, traverseBase, canThrow)(element);
+    }
+
+
+    static T fromDocument(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
+            (Element element, T defaultValue = T.init) if (is(T == class) && __traits(compiles, new T())) { // is(typeof(new T()))
+
+        auto result = new T();
+        if(element is null)
+            return result;
+
+        static if(is(T : XmlSerializable)) {
+            result.xmlDeserialize(element);
+        } else {
+            try {
+                deserializeObject!(T, traverseBase)(result, element);
+            } catch (XmlException e) {
+                return handleException!(T, canThrow)(element, e.msg, defaultValue);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Struct
+     */
+    static T fromDocument(T, bool canThrow = false)(Document json, T defaultValue = T.init) 
+            if (is(T == struct) && !is(T == SysTime)) {
+
+        auto result = T();
+        Element element = doc.firstNode();
+        if(element is null)
+            return result;
+
+        try {
+            static foreach (string member; FieldNameTuple!T) {
+                deserializeMember!(member)(result, element);
+            }
+        } catch (XmlException e) {
+            return handleException!(T, canThrow)(element, e.msg, defaultValue);
+        }
+
+        return result;
+    }
+
+    /**
+     * struct
+     */
+    static void deserializeObject(T)(ref T target, Element element) if(is(T == struct)) {
+        static foreach (string member; FieldNameTuple!T) {
+            // current fields
+            deserializeMember!(member)(target, element);
+        }
+    }
+
+    /**
+     * class
+     */
+    static void deserializeObject(T, TraverseBase traverseBase = TraverseBase.yes)
+            (T target, Element element) if(is(T == class)) {
+
+        static foreach (string member; FieldNameTuple!T) {
+            // current fields
+            deserializeMember!(member)(target, element);
+        }
+
+        // super fields
+        static if(traverseBase) {
+            alias baseClasses = BaseClassesTuple!T;
+            alias BaseType = baseClasses[0];
+
+            static if(baseClasses.length >= 1 && !is(BaseType == Object)) {
+                debug(HUNT_DEBUG_MORE) {
+                    infof("deserializing fields in base %s for %s", BaseType.stringof, T.stringof);
+                }
+                
+                alias xmlRootUDAs = getUDAs!(BaseType, XmlRootElement);
+                static if(xmlRootUDAs.length > 0) {
+                    enum RootNodeName = xmlRootUDAs[0].name;
+                } else {
+                    enum RootNodeName = BaseType.stringof;
+                }
+
+                Element baseClassElement = element.firstNode(RootNodeName);
+                if(baseClassElement !is null) {
+                    deserializeObject!(BaseType, traverseBase)(target, baseClassElement);
+                }
+            }
+        }
+    }
+
+    private static void deserializeMember(string member, T, TraverseBase traverseBase = TraverseBase.yes)
+            (ref T target, Element element) {
+        
+        alias currentMember = __traits(getMember, T, member);
+        alias memberType = typeof(currentMember);
+        
+        debug(HUNT_DEBUG_MORE) {
+            infof("deserializing member: %s %s", memberType.stringof, member);
+        }
+
+        static if(!hasUDA!(currentMember, Ignore) && 
+            !hasUDA!(__traits(getMember, T, member), XmlIgnore)) {
+
+            static if(is(memberType == interface) && !is(memberType : XmlSerializable)) {
+                version(HUNT_DEBUG) warning("skipped a interface member (not XmlSerializable): " ~ member);
+            } else {
+                
+                alias xmlAttributeUDAs = getUDAs!(currentMember, XmlAttribute);
+                alias xmlElementUDAs = getUDAs!(currentMember, XmlElement);
+                static if(xmlAttributeUDAs.length > 0 && xmlElementUDAs.length > 0) {
+                    static assert(false, "Cna't use both XmlAttribute and XmlElement at one time");
+                }
+
+                static if(xmlAttributeUDAs.length > 0) {
+                    enum ElementName = xmlAttributeUDAs[0].name;
+                    enum elementName = (ElementName.length == 0) ? member : ElementName;
+                    static if(isAssociativeArray!(memberType)) {
+                        // TODO: Tasks pending completion -@zhangxueping at 2019-12-04T15:15:54+08:00
+                        // 
+                        __traits(getMember, target, member) = fromDocument!(memberType, false)(element);
+                    } else {
+                        Attribute att = element.firstAttribute(elementName);
+                        if(att is null) {
+                            version(HUNT_DEBUG) warningf("No data available for member: %s", member);
+                        } else {
+                            __traits(getMember, target, member) = fromAttribute!(memberType, false)(att);
+                        }
+                    }
+
+                } else static if(xmlElementUDAs.length > 0) {
+                    enum ElementName = xmlElementUDAs[0].name;
+                    enum elementName = (ElementName.length == 0) ? member : ElementName;
+                    Element ele = element.firstNode(elementName);
+                    if(ele is null) {
+                        version(HUNT_DEBUG) warningf("No data available for member: %s", member);
+                    } else {
+                        __traits(getMember, target, member) = fromDocument!(memberType, false)(ele);
+                    }
+                } else {
+                    enum elementName = member;
+                    Element ele = element.firstNode(elementName);
+                    if(ele is null) {
+                        version(HUNT_DEBUG) warningf("No data available for member: %s", member);
+                    } else {
+                        __traits(getMember, target, member) = fromDocument!(memberType)(ele);
+                        // static if(isAssociativeArray!(memberType)) {
+                        //     __traits(getMember, target, member) = fromDocument!(memberType)(ele);
+                        // } else {
+                        //     __traits(getMember, target, member) = fromDocument!(memberType)(ele);
+                        // }
+                    }
+                }
+            }                    
+        } else {
+            version(HUNT_DEBUG) {
+                infof("Ignore a member: %s %s", memberType.stringof, member);
+            }
+        }
+    }
+
+    private static T fromAttribute(T, bool canThrow = false)(Attribute attribute) {
+        info(attribute.toString());
+        string value = attribute.getValue();
+        static if(isSomeString!T) {
+            return value;
+        } else static if(isBasicType!T) {
+            return to!T(value);
+        } else {
+            warning("TODO: " ~ T.stringof);
+            return T.init;
+        }
+    }
+
+
+    /** 
+     * XmlSerializable
+     * 
+     * Params:
+     *   element = 
+     *   T.init = 
+     * Returns: 
+     */
+    static T fromDocument(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+            if(is(T == interface) && is(T : XmlSerializable)) {
+
+        Attribute attribute = element.firstAttribute(MetaTypeName);
+        if(attribute is null) {
+            warningf("Can't find the attribute '%s' in %s", MetaTypeName, element.getName());
+            return T.init;
+        }
+
+        string typeId = attribute.getValue();
+        T t = cast(T) Object.factory(typeId);
+        if(t is null) {
+            warningf("Can't create instance for %s", T.stringof);
+        }
+        t.xmlDeserialize(element);
+        return t;
+    }
+
+    static T fromDocument(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+            if(is(T == SysTime)) {
+
+        Attribute attribute = element.firstAttribute("format");
+        if(attribute is null) {
+            warningf("Can't find the attribute 'format' in %s", element.getName());
+            return T.init;
+        }
+
+        Element txtElement = element.firstNode();
+        string value = txtElement.getText();
+        debug(HUNT_DEBUG_MORE) trace(txtElement.toString());
+
+        string name = attribute.getValue();
+        try {
+            if(name == "std") {
+                return SysTime(value.to!long());  // STD time
+            } else {
+                return SysTime.fromSimpleString(value);
+            }
+        } catch(Exception ex ){
+            handleException!(T, canThrow)(element, "Wrong SysTime type", defaultValue);
+        }
+
+        return T.init;
+    }
+
+    /** 
+     * string, int, long etc.
+     * 
+     * Params:
+     *   element = 
+     *   T.init = 
+     * Returns: 
+     */
+    static T fromDocument(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+            if (isNumeric!T || isSomeString!T) {
+
+        Element txtElement = element;
+        if(element.getType() != NodeType.Text) {
+            txtElement = element.firstNode();
+        }
+        
+        debug(HUNT_DEBUG_MORE) {
+            trace(element.toString());
+        }
+
+        try {
+
+            if(txtElement is null) {
+                warningf("No text element for [%s], so use its default.", element.toString());
+                return T.init;
+            } else {
+                debug(HUNT_DEBUG_MORE) trace(txtElement.toString());
+                string text = txtElement.getText();
+                return text.to!T;
+            }
+        } catch(Exception ex) {
+            return handleException!(T, canThrow)(element, ex.msg, defaultValue);
+        }
+    }
+
+    /** 
+     * string[], byte[], int[] etc.
+     * 
+     * Params:
+     *   element = 
+     * 
+     *   T.init = 
+     * Returns: 
+     */    
+    static T fromDocument(T : U[], bool canThrow = false, U)
+            (Element element,  U defaultValue = U.init)
+            if (isSomeString!U || (isBasicType!U && !isSomeString!T)) {
+        
+        Appender!T appender;
+        debug(HUNT_DEBUG_MORE) {
+            trace(element.toString());
+        }
+
+        Element currentElement = element.firstNode();
+        while(currentElement !is null) {
+            Element txtElement = currentElement.firstNode();
+            debug(HUNT_DEBUG_MORE) {
+                trace(currentElement.toString());
+                if(txtElement is null) {
+                    warning("TxtElement is null");
+                } else {
+                    infof(txtElement.toString());
+                }
+            }
+
+            string v = txtElement.getText();
+            static if(isSomeString!U) {
+                appender.put(v);
+            } else {
+                try {
+                    appender.put(v.to!U());
+                } catch(Exception ex) {
+                    handleException(txtElement, ex.msg, defaultValue);
+                }
+            }
+            
+            currentElement = currentElement.nextSibling();
+        }
+
+        return appender.data;
+    }
+
+    /** 
+     * class[] or struct[]
+     * 
+     * Params:
+     *   element = 
+     *   U.init = 
+     * Returns: 
+     */
+    static T fromDocument(T : U[], bool canThrow = false, U)(Element element,  U defaultValue = U.init)
+            if (is(U == class) || is(U==struct)) {
+
+        enum TraverseBase traverseBase = TraverseBase.yes;
+
+        debug(HUNT_DEBUG_MORE) trace(element.toString());
+        Appender!T appender;
+        Element currentElement = element.firstNode();
+
+        while(currentElement !is null) {            
+            debug(HUNT_DEBUG_MORE) trace(currentElement.toString());
+            static if(is(U == SysTime)) {
+                U v = fromDocument!(SysTime)(currentElement);
+                appender.put(v);
+            } else {
+                U v = fromDocument!(U, traverseBase, canThrow)(currentElement);
+                appender.put(v);
+            }
+            currentElement = currentElement.nextSibling();
+        }
+
+        return appender.data;
+    }
+
+    /** 
+     * V[K]
+     * 
+     * Params:
+     *   element = 
+     *   T.init = 
+     * Returns: 
+     */
+    static T fromDocument(T : V[K],  bool childNodeStyle = true, bool canThrow = false, V, K)(
+            Element element, T defaultValue = T.init) if (isAssociativeArray!T) {
+        
+        T result;
+
+        static if(is(V == class) || is(V == struct)) {
+            warning("TODO: " ~ T.stringof); 
+        }
+        debug(HUNT_DEBUG_MORE) trace(element.toString());
+
+        static if(childNodeStyle) {
+            Element currentElement = element.firstNode();
+            while(currentElement !is null) {
+                debug(HUNT_DEBUG_MORE) trace(currentElement.toString());
+                string key = currentElement.getName();
+
+                static if(is(V == class) || is(V == struct)) {
+                    // TODO: Tasks pending completion -@zhangxueping at 2019-12-04T15:01:09+08:00
+                    // 
+                } else {
+                    Element txtElement = currentElement.firstNode();
+                    debug(HUNT_DEBUG_MORE) {
+                        if(txtElement is null) {
+                            warning("TxtElement is null");
+                        } else {
+                            infof(txtElement.toString());
+                        }
+                    }
+
+                    static if(isSomeString!V) {
+                        string v = txtElement.getText();
+                        static if(isSomeString!V) {
+                            result[key] = v;
+                        } else {
+                            try {
+                                result[key] = v.to!V();
+                            } catch(Exception ex) {
+                                handleException(txtElement, ex.msg, defaultValue);
+                            }
+                        }
+                    }
+                } 
+
+                currentElement = currentElement.nextSibling();
+            }
+
+        } else {
+            Attribute attr = element.firstAttribute();
+            while(attr !is null) {
+                debug(HUNT_DEBUG_MORE) trace(attr.toString());
+                string key = attr.getName();
+                string v = attr.getValue();
+                
+                static if(is(V == class) || is(V == struct)) {
+                    // TODO: Tasks pending completion -@zhangxueping at 2019-12-04T15:01:09+08:00
+                    // 
+                } else static if(isSomeString!V) {
+                    static if(isSomeString!V) {
+                        result[key] = v;
+                    } else {
+                        try {
+                            result[key] = v.to!V();
+                        } catch(Exception ex) {
+                            handleException(txtElement, ex.msg, defaultValue);
+                        }
+                    }
+                }
+                attr = attr.nextAttribute();
+            }
+        }
+
+        return result;
+    }
+    
+    private static T handleException(T, bool canThrow = false) (Element element, 
+        string message, T defaultValue = T.init) {
+        static if (canThrow) {
+            throw new XmlException(element.toString() ~ " is not a " ~ T.stringof ~ " type");
+        } else {
+        version (HUNT_DEBUG)
+            warningf(" %s is not a %s type. Using the defaults instead! \n Exception: %s",
+                element.toString(), T.stringof, message);
+            return defaultValue;
+        }
+    }
 
 
     /* -------------------------------------------------------------------------- */
@@ -81,7 +535,6 @@ final class XmlSerializer {
         enum options = SerializationOptions().depth(depth);
         return toDocument!(options)(value);
     }
-
 
     /// ditto
     static Document toDocument(SerializationOptions options, T)
@@ -286,22 +739,28 @@ final class XmlSerializer {
     private static void serializeMemberAsAttribute(SerializationOptions options, 
             string member, string elementName, T)(T m, Element parent) {
         //
-        Attribute attribute;
+        Node node;
         static if(isSomeString!T) {
-            attribute = new Attribute(elementName, m);
+            Attribute attribute = new Attribute(elementName, m);
             parent.appendAttribute(attribute);
+            node = attribute;
         } else static if (isBasicType!(T)) {
-            attribute = new Attribute(elementName, m.to!string());
+            Attribute attribute = new Attribute(elementName, m.to!string());
             parent.appendAttribute(attribute);
+            node = attribute;
+        } else static if (is(T : V[K], V, K)) {
+            Element element = toXmlElement!(options, false)(elementName, m);
+            parent.appendNode(element);
+            node = element;
         } else {
             static assert(false, "Only basic type or string can be set as an attribute: " ~ T.stringof);
         }
 
         debug(HUNT_DEBUG_MORE) {
-            if(attribute is null)
-                tracef("member: %s, attribute: null", member);
+            if(node is null)
+                tracef("member: %s, node: null", member);
             else
-                tracef("member: %s, attribute: { %s }", member, attribute.toString());
+                tracef("member: %s, node: { %s }", member, node.toString());
         }
     }
 
@@ -328,21 +787,14 @@ final class XmlSerializer {
         } else static if(is(T : U[], U)) { 
             if(m is null) {
                 static if(!options.ignoreNull) {
-                    static if(isSomeString!T) {
-                        element = toXmlElement(elementName, m);
-                    } else {
-                        // TODO: Tasks pending completion -@zhangxueping at 2019-12-03T14:10:45+08:00
-                        // 
-                        warning("TODO: " ~ T.stringof);
-                    }
+                    element = toXmlElement(elementName, m);
                 }
             } else {
                 static if (is(U == class) || is(U == struct) || is(U == interface)) {
                     // class[] obj; struct[] obj;
                     element = serializeObjectMember!(options)(elementName, m);
                 } else {
-                    // element = toXmlElement(m);
-                    warning("TODO: " ~ U.stringof);
+                    element = toXmlElement(elementName, m);
                 }
             }
         } else {
@@ -381,6 +833,7 @@ final class XmlSerializer {
      * SysTime
      */
     static Element toXmlElement(string name, ref SysTime value, bool asInteger=true) {
+        if(name.empty) name = SysTime.stringof;
         Element result = new Element(name);
         Element txt = new Element(NodeType.Text);
 
@@ -433,6 +886,7 @@ final class XmlSerializer {
     }
 
     /** 
+     * Basic types or string
      * 
      * Params:
      *   value = 
@@ -455,13 +909,23 @@ final class XmlSerializer {
         return result;
     }
 
-    // /**
-    //  * string[]
-    //  */
-    // static Document toXmlElement(T)(T value)
-    //         if (is(T : U[], U) && (isBasicType!U || isSomeString!U)) {
-    //     return Document(value);
-    // }
+    /**
+     * string[], byte[], int[] etc.
+     */
+    static Element toXmlElement(T : U[], U)(string name, T value)
+            if ((isBasicType!U && !isSomeString!T) || isSomeString!U) {
+                
+        Element roolElement = new Element(name);
+
+        if(value !is null) {
+            value.map!(item => toXmlElement(U.stringof, item))
+                 .each!((item) {
+                        if(item !is null)  roolElement.appendNode(item);
+                    })();
+        }
+
+        return roolElement;
+    }
 
     /**
      * class[]
@@ -490,19 +954,15 @@ final class XmlSerializer {
         Element roolElement = new Element(name);
 
         if(value !is null) {
-            static if(is(U == SysTime)) {
-                // return Document(value.map!(item => toXmlElement(item))()
-                //         .map!(json => json.isNull ? Document(null) : json).array);
-                
-                // value.map!(item => toXmlElement!(SysTime)(item))()
-                //     .map!((item) {
-                //             if(item !is null)  roolElement.appendNode(el);
-                //         })();
-                warningf("TODO: SysTime[] %s", name);
+            static if(is(U == SysTime)) {                                
+                value.map!(item => toXmlElement("", item))
+                    .each!((item) {
+                            if(item !is null)  roolElement.appendNode(item);
+                        })();
             } else {                
                 value.map!(item => serializeObject!(options)(item))()
                     .each!((item) {
-                            if(item !is null)  roolElement.appendNode(el);
+                            if(item !is null)  roolElement.appendNode(item);
                         })();
             }
         }
@@ -513,40 +973,57 @@ final class XmlSerializer {
     /**
      * V[K]
      */
-    static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal,
+    static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal, bool childNodeStyle = true,
             T : V[K], V, K)(string name, T value) {
         Element result = new Element(name);
 
-        foreach (ref K key; value.keys) {
+        static if(childNodeStyle) {
 
-            static if(isSomeString!K) {
-                string keyName = key;
-            } else {
-                string keyName = key.to!string();
+            foreach (ref K key; value.keys) {
+
+                static if(isSomeString!K) {
+                    string keyName = key;
+                } else {
+                    string keyName = key.to!string();
+                }
+
+                static if(is(V == SysTime)) {
+                    Element element = toXmlElement(keyName, value[key]);
+                    result.appendNode(element);
+
+                } else static if(is(V == class) || is(V == struct) || is(V == interface)) {
+                    Element element = toXmlElement!(options)(keyName, value[key]);
+                    result.appendNode(element);
+
+                } else {
+                    Element element = toXmlElement(keyName, value[key]);
+                    result.appendNode(element);
+                }
             }
 
-            static if(is(V == SysTime)) {
-                Element element = toXmlElement(keyName, value[key]);
-                result.appendNode(element);
+        } else {
 
-            } else static if(is(V == class) || is(V == struct) || is(V == interface)) {
-                Element element = toXmlElement!(options)(keyName, value[key]);
-                result.appendNode(element);
+            foreach (ref K key; value.keys) {
 
-            } else {
-                static if(isSomeString!V) {
-                    Attribute attribute = new Attribute(keyName, value[key]);
+                static if(isSomeString!K) {
+                    string keyName = key;
                 } else {
-                    Attribute attribute = new Attribute(keyName, value[key].to!string());
+                    string keyName = key.to!string();
+                }
+
+                Attribute attribute;
+                static if(isSomeString!V) {
+                    attribute = new Attribute(keyName, value[key]);
+                } else {
+                    attribute = new Attribute(keyName, value[key].to!string());
                 }
                 result.appendAttribute(attribute);
             }
-
         }
-
         return result;
     }
 }
 
 
 alias toDocument = XmlSerializer.toDocument;
+alias fromDocument = XmlSerializer.fromDocument;
