@@ -26,38 +26,55 @@ class SerializerTest {
 
 
     @Test void testGetAsClass01() {
+        auto creationTime = Clock.currTime;
+        long currentStdTime = Clock.currStdTime;
+
+
         Greeting gt = new Greeting();
+        gt.initialization();
         gt.setPrivateMember("private member");
         gt.id = 123;
         gt.content = "Hello, world!";
-        gt.creationTime = Clock.currTime;
-        gt.currentTime = Clock.currStdTime;
+        gt.creationTime = creationTime;
+        gt.currentTime = currentStdTime;
         gt.setColor("Red");
         gt.setContent("Hello");
         Document xv = XmlSerializer.toDocument(gt);
         trace(xv.toPrettyString());
 
-        // Greeting gt1 = XmlSerializer.fromXml!(Greeting)(jv);
-        // // trace("gt====>", gt, "====");
-        // // trace("gt1====>", gt1, "====");
-        // assert(gt1 !is null);
-        // // trace(gt1.getContent());
+        Greeting gt1 = XmlSerializer.fromDocument!(Greeting)(xv);
+        assert(gt1 !is null);
+        // trace("gt====>", gt, "====");
+        // trace("gt1====>", gt1, "====");
+        // trace(gt1.getContent());
+        // warning(gt1.getColor());
 
-        // assert(gt.getPrivateMember == gt1.getPrivateMember);
-        // assert(gt.id == gt1.id);
-        // assert(gt.content == gt1.content);
-        // assert(gt.creationTime == gt1.creationTime);
-        // assert(gt.currentTime != gt1.currentTime);
-        // assert(0 == gt1.currentTime);
-        // assert(gt.getColor() == gt1.getColor());
-        // assert(gt1.getColor() == "Red");
-        // assert(gt.getContent() == gt1.getContent());
-        // assert(gt1.getContent() == "Hello");
+        assert(gt.getPrivateMember == gt1.getPrivateMember);
+        assert(gt.id == gt1.id);
+        assert(gt.content == gt1.content);
+        assert(gt.creationTime == gt1.creationTime);
+        assert(gt.currentTime != gt1.currentTime);
+        assert(0 == gt1.currentTime);
+        assert(gt1.settings !is null);
 
-        // Document parametersInXml;
-        // parametersInXml["name"] = "Hunt";
-        // string parameterModel = XmlSerializer.getItemAs!(string)(parametersInXml, "name");
-        // assert(parameterModel == "Hunt");
+        assert(gt.getColor() == gt1.getColor());
+        assert(gt1.getColor() == "Red");
+        assert(gt.getContent() == gt1.getContent());
+        assert(gt1.getContent() == "Hello");
+
+        // array
+        string[] members = gt1.members;
+        assert(members.length >=2);
+        assert(members[0] == "Alice");
+
+        string[string] languages = gt1.languages;
+        assert(languages.length >=2);
+        assert(languages["en-us"] == "Hello!");
+
+        Guest[] guests = gt1.guests;
+        assert(guests.length >=1);
+        assert(guests[0].name == gt.guests[0].name);
+        assert(guests[0].age == gt.guests[0].age);
     }
 
 
@@ -140,8 +157,9 @@ abstract class GreetingSettingsBase : ISettings {
         return result;
     }
 
-    void xmlDeserialize(Document value) {
+    void xmlDeserialize(Element value) {
         // do nothing
+        warning("TODO: ", value.toString());
     }
 }
 
@@ -195,9 +213,12 @@ class GreetingSettings : GreetingSettingsBase {
         // return result;        
     }
     
-    override void xmlDeserialize(Document value) {
-        info(value.toString());
+    override void xmlDeserialize(Element value) {
         // _color = value["_color"].str;
+        info("Using XmlSerializable's interface for ", value.toString());
+        XmlSerializer.deserializeObject!(typeof(this), TraverseBase.yes)(this, value);
+
+        // It's not necessary to call super's xmlDeserialize;
     }
 
 }
@@ -207,7 +228,9 @@ class GreetingSettings : GreetingSettingsBase {
  * 
  */
 class GreetingBase {
+    @XmlAttribute("ID")
     int id;
+
     private string content;
 
     this() {
@@ -257,12 +280,12 @@ class Greeting : GreetingBase {
     string[] members;
     Guest[] guests;
 
+    // @XmlAttribute()
     string[string] languages;
     
 
     this() {
         super();
-        initialization();
     }
 
     this(int id, string content) {
@@ -271,7 +294,7 @@ class Greeting : GreetingBase {
         initialization();
     }
 
-    private void initialization() {
+    void initialization() {
 
         settings = new GreetingSettings();
 
@@ -279,9 +302,15 @@ class Greeting : GreetingBase {
         times[0] = Clock.currTime;
         times[1] = Clock.currTime;
 
+        members = new string[2];
+        members[0] = "Alice";
+        members[1] = "Bob";
+
+
         guests = new Guest[1];
         guests[0] = new Guest();
         guests[0].name = "guest01";
+        guests[0].age = 25;
 
         languages["zh-cn"] = "你好！";
         languages["en-us"] = "Hello!";
