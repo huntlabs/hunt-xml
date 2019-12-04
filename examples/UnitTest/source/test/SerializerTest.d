@@ -42,7 +42,7 @@ class SerializerTest {
         Document xv = XmlSerializer.toDocument(gt);
         trace(xv.toPrettyString());
 
-        Greeting gt1 = XmlSerializer.fromDocument!(Greeting)(xv);
+        Greeting gt1 = XmlSerializer.toObject!(Greeting)(xv);
         assert(gt1 !is null);
         // trace("gt====>", gt, "====");
         // trace("gt1====>", gt1, "====");

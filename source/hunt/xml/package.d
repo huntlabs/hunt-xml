@@ -19,3 +19,5 @@ public import hunt.xml.Node;
 public import hunt.xml.Writer;
 
 public import hunt.xml.XmlSerializer;
+
+public import hunt.serialization.Common;

@@ -67,29 +67,29 @@ interface XmlSerializable {
  */
 final class XmlSerializer {
 
-    static T fromDocument(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
+    static T toObject(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
             (string xml, T defaultValue = T.init) if (is(T == class)) {
-        return fromDocument!(T, traverseBase, canThrow)(Document.parse(xml), defaultValue);
+        return toObject!(T, traverseBase, canThrow)(Document.parse(xml), defaultValue);
     }
 
-    static T fromDocument(T, bool canThrow = false)
+    static T toObject(T, bool canThrow = false)
             (string xml, T defaultValue = T.init) if (!is(T == class)) {
-        return fromDocument!(T, canThrow)(Document.parse(xml), defaultValue);
+        return toObject!(T, canThrow)(Document.parse(xml), defaultValue);
     }
 
     /**
      *  Converts a `Document` to an object of type `T` by filling its fields with the Document's elements.
      */
-    static T fromDocument(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
+    static T toObject(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
             (Document doc, T defaultValue = T.init) if (is(T == class) && __traits(compiles, new T())) { // is(typeof(new T()))
 
         assert(doc !is null);
         Element element = doc.firstNode();
-        return fromDocument!(T, traverseBase, canThrow)(element);
+        return toObject!(T, traverseBase, canThrow)(element);
     }
 
 
-    static T fromDocument(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
+    static T toObject(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
             (Element element, T defaultValue = T.init) if (is(T == class) && __traits(compiles, new T())) { // is(typeof(new T()))
 
         auto result = new T();
@@ -112,7 +112,7 @@ final class XmlSerializer {
     /**
      * Struct
      */
-    static T fromDocument(T, bool canThrow = false)(Document json, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Document json, T defaultValue = T.init) 
             if (is(T == struct) && !is(T == SysTime)) {
 
         auto result = T();
@@ -206,7 +206,7 @@ final class XmlSerializer {
                     static if(isAssociativeArray!(memberType)) {
                         // TODO: Tasks pending completion -@zhangxueping at 2019-12-04T15:15:54+08:00
                         // 
-                        __traits(getMember, target, member) = fromDocument!(memberType, false)(element);
+                        __traits(getMember, target, member) = toObject!(memberType, false)(element);
                     } else {
                         Attribute att = element.firstAttribute(elementName);
                         if(att is null) {
@@ -223,7 +223,7 @@ final class XmlSerializer {
                     if(ele is null) {
                         version(HUNT_DEBUG) warningf("No data available for member: %s", member);
                     } else {
-                        __traits(getMember, target, member) = fromDocument!(memberType, false)(ele);
+                        __traits(getMember, target, member) = toObject!(memberType, false)(ele);
                     }
                 } else {
                     enum elementName = member;
@@ -231,11 +231,11 @@ final class XmlSerializer {
                     if(ele is null) {
                         version(HUNT_DEBUG) warningf("No data available for member: %s", member);
                     } else {
-                        __traits(getMember, target, member) = fromDocument!(memberType)(ele);
+                        __traits(getMember, target, member) = toObject!(memberType)(ele);
                         // static if(isAssociativeArray!(memberType)) {
-                        //     __traits(getMember, target, member) = fromDocument!(memberType)(ele);
+                        //     __traits(getMember, target, member) = toObject!(memberType)(ele);
                         // } else {
-                        //     __traits(getMember, target, member) = fromDocument!(memberType)(ele);
+                        //     __traits(getMember, target, member) = toObject!(memberType)(ele);
                         // }
                     }
                 }
@@ -248,7 +248,7 @@ final class XmlSerializer {
     }
 
     private static T fromAttribute(T, bool canThrow = false)(Attribute attribute) {
-        info(attribute.toString());
+        debug(HUNT_DEBUG_MORE) info(attribute.toString());
         string value = attribute.getValue();
         static if(isSomeString!T) {
             return value;
@@ -269,7 +269,7 @@ final class XmlSerializer {
      *   T.init = 
      * Returns: 
      */
-    static T fromDocument(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
             if(is(T == interface) && is(T : XmlSerializable)) {
 
         Attribute attribute = element.firstAttribute(MetaTypeName);
@@ -287,7 +287,7 @@ final class XmlSerializer {
         return t;
     }
 
-    static T fromDocument(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
             if(is(T == SysTime)) {
 
         Attribute attribute = element.firstAttribute("format");
@@ -322,7 +322,7 @@ final class XmlSerializer {
      *   T.init = 
      * Returns: 
      */
-    static T fromDocument(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
             if (isNumeric!T || isSomeString!T) {
 
         Element txtElement = element;
@@ -337,7 +337,7 @@ final class XmlSerializer {
         try {
 
             if(txtElement is null) {
-                warningf("No text element for [%s], so use its default.", element.toString());
+                version(HUNT_DEBUG) warningf("No text element for [%s], so use its default.", element.toString());
                 return T.init;
             } else {
                 debug(HUNT_DEBUG_MORE) trace(txtElement.toString());
@@ -358,7 +358,7 @@ final class XmlSerializer {
      *   T.init = 
      * Returns: 
      */    
-    static T fromDocument(T : U[], bool canThrow = false, U)
+    static T toObject(T : U[], bool canThrow = false, U)
             (Element element,  U defaultValue = U.init)
             if (isSomeString!U || (isBasicType!U && !isSomeString!T)) {
         
@@ -404,7 +404,7 @@ final class XmlSerializer {
      *   U.init = 
      * Returns: 
      */
-    static T fromDocument(T : U[], bool canThrow = false, U)(Element element,  U defaultValue = U.init)
+    static T toObject(T : U[], bool canThrow = false, U)(Element element,  U defaultValue = U.init)
             if (is(U == class) || is(U==struct)) {
 
         enum TraverseBase traverseBase = TraverseBase.yes;
@@ -416,10 +416,10 @@ final class XmlSerializer {
         while(currentElement !is null) {            
             debug(HUNT_DEBUG_MORE) trace(currentElement.toString());
             static if(is(U == SysTime)) {
-                U v = fromDocument!(SysTime)(currentElement);
+                U v = toObject!(SysTime)(currentElement);
                 appender.put(v);
             } else {
-                U v = fromDocument!(U, traverseBase, canThrow)(currentElement);
+                U v = toObject!(U, traverseBase, canThrow)(currentElement);
                 appender.put(v);
             }
             currentElement = currentElement.nextSibling();
@@ -436,7 +436,7 @@ final class XmlSerializer {
      *   T.init = 
      * Returns: 
      */
-    static T fromDocument(T : V[K],  bool childNodeStyle = true, bool canThrow = false, V, K)(
+    static T toObject(T : V[K],  bool childNodeStyle = true, bool canThrow = false, V, K)(
             Element element, T defaultValue = T.init) if (isAssociativeArray!T) {
         
         T result;
@@ -1026,4 +1026,4 @@ final class XmlSerializer {
 
 
 alias toDocument = XmlSerializer.toDocument;
-alias fromDocument = XmlSerializer.fromDocument;
+alias toObject = XmlSerializer.toObject;
