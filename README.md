@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/huntlabs/hunt-xml.svg?branch=master)](https://travis-ci.org/huntlabs/hunt-xml)
+
 # Hunt-XML
 A XML library for D Programming Language.
 
@@ -11,22 +13,27 @@ A XML library for D Programming Language.
 
 ### String parse/write
 ```d
-void readAndWrite()
+import hunt.xml;
+
+void main()
 {
     Document doc = Document.parse("<single-element attr1='one' attr2=\"two\"/>");
-    doc.validate();
-    auto node = doc.firstNode();
-    assert(node.getName() == "single-element");
-	assert(doc.toPrettyString() == "<single-element attr1='one' attr2='two'/>\n");
+    if(doc.validate())
+    {
+        auto node = doc.firstNode();
+        writeln(node.getName()); // print single-element
+    }
 }
 ```
 
 ### File load/save
 ```d
-void loadAndSave()
+import hunt.xml;
+
+void main()
 {
 	Document document = Document.load("resources/books.xml");
-	document.toFile("output.xml");
+	document.save("output.xml");
 }
 ```
 
@@ -47,23 +54,15 @@ class GreetingSettings : GreetingSettingsBase {
 
     @XmlElement("Color")
     string color;
-    
-    this() {
-        this.color = "black";
-    }
-
-    this(int id, string color) {
-		this.id = id;
-        this.color = color;
-    }
 }
 
 void objectToXml() {
-	GreetingSettings settings = new GreetingSettings(1002, "Red");
+	auto settings = new GreetingSettings;
 	settings.name = "hunt";
 
 	Document doc = toDocument(settings);
-	writeln(doc.toPrettyString());
+	writeln(doc.toString()); // print xml text
+	writeln(doc.toPrettyString()); // print pretty xml text
 }
 
 void xmlToObject() {

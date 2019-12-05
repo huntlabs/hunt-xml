@@ -187,13 +187,14 @@ final class XmlSerializer {
             infof("deserializing member: %s %s", memberType.stringof, member);
         }
 
-        static if(!hasUDA!(currentMember, Ignore) && 
-            !hasUDA!(__traits(getMember, T, member), XmlIgnore)) {
-
+        static if(hasUDA!(currentMember, Ignore) ||hasUDA!(__traits(getMember, T, member), XmlIgnore)) {
+            version(HUNT_DEBUG) {
+                infof("Ignore a member: %s %s", memberType.stringof, member);
+            }               
+        } else {
             static if(is(memberType == interface) && !is(memberType : XmlSerializable)) {
                 version(HUNT_DEBUG) warning("skipped a interface member (not XmlSerializable): " ~ member);
             } else {
-                
                 alias xmlAttributeUDAs = getUDAs!(currentMember, XmlAttribute);
                 alias xmlElementUDAs = getUDAs!(currentMember, XmlElement);
                 static if(xmlAttributeUDAs.length > 0 && xmlElementUDAs.length > 0) {
@@ -239,11 +240,7 @@ final class XmlSerializer {
                         // }
                     }
                 }
-            }                    
-        } else {
-            version(HUNT_DEBUG) {
-                infof("Ignore a member: %s %s", memberType.stringof, member);
-            }
+            }     
         }
     }
 

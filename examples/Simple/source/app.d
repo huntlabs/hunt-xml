@@ -19,7 +19,7 @@ void readAndWrite() {
 // load/save
 void loadAndSave() {
 	Document document = Document.load("resources/books.xml");
-	document.toFile("output.xml");
+	document.save("output.xml");
 }
 
 // Serialization

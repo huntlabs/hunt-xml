@@ -34,7 +34,7 @@ class Document : Element {
         return DocumentParser.parse!(Flags)(text);
     }
 
-    void toFile(string fileName, bool isIndented = true) {
+    void save(string fileName, bool isIndented = true) {
         import std.stdio;
         auto file = File(fileName, "w");
         scope(exit) {

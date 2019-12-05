@@ -306,7 +306,6 @@ class Greeting : GreetingBase {
         members[0] = "Alice";
         members[1] = "Bob";
 
-
         guests = new Guest[1];
         guests[0] = new Guest();
         guests[0].name = "guest01";
