@@ -1,37 +1,27 @@
-# rapidxml
-A XML Parsing library for D Programming Language. Ported from C++ [rapidxml](http://rapidxml.sourceforge.net).
+# Hunt-XML
+A XML library for D Programming Language.
+
+## Features
+* DOM parser: parse XML Document
+* DOM writer: to string and to file
+* Object serialization/seserialization
+
 
 ## Examples
 
-### Parsing
-
-```D
-import hunt.xml;
-import stdio;
-
-void main()
-{
-    auto doc = new Document;
-    string xml = "<single-element/>";
-    doc.parse(xml);
-    auto node = doc.firstNode();
-    writeln(node.getName());
-    doc.validate();
-}
-```
-
-### Read/Write
+### String parse/write
 ```d
 void readAndWrite()
 {
     Document doc = Document.parse("<single-element attr1='one' attr2=\"two\"/>");
+    doc.validate();
     auto node = doc.firstNode();
     assert(node.getName() == "single-element");
 	assert(doc.toPrettyString() == "<single-element attr1='one' attr2='two'/>\n");
 }
 ```
 
-### Load/Save
+### File load/save
 ```d
 void loadAndSave()
 {
@@ -40,9 +30,34 @@ void loadAndSave()
 }
 ```
 
-### Serialization/Deserialization
+### Simple object serialization/deserialization
 
 ```d
+@XmlRootElement("GreetingBase")
+abstract class GreetingSettingsBase {
+    string city;
+    string name = "HuntLabs";
+}
+
+@XmlRootElement("Greeting")
+class GreetingSettings : GreetingSettingsBase {
+
+    @XmlAttribute("ID")
+    int id = 1001;
+
+    @XmlElement("Color")
+    string color;
+    
+    this() {
+        this.color = "black";
+    }
+
+    this(int id, string color) {
+		this.id = id;
+        this.color = color;
+    }
+}
+
 void objectToXml() {
 	GreetingSettings settings = new GreetingSettings(1002, "Red");
 	settings.name = "hunt";
@@ -63,13 +78,13 @@ void xmlToObject() {
 	`;
 
 	auto obj = toObject!(GreetingSettings)(text);
-	assert(obj._id == 1003);
+	assert(obj.id == 1003);
 	assert(obj.name == "hunt");
 	assert(obj.color == "Red");
 }
 ```
 
-### More complex xml
+### Complex object serialization/deserialization
 See [SerializerTest](examples/UnitTest/source/test/SerializerTest.d).
 
 ```xml
@@ -105,8 +120,8 @@ See [SerializerTest](examples/UnitTest/source/test/SerializerTest.d).
         </Guest>
     </guests>
     <languages>
-        <en-us>Hello!</en-us>
-        <zh-cn>你好！</zh-cn>
+        <en-us>English</en-us>
+        <zh-cn>中文</zh-cn>
     </languages>
 </Greeting>
 ```

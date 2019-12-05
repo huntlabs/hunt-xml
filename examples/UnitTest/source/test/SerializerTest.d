@@ -312,8 +312,8 @@ class Greeting : GreetingBase {
         guests[0].name = "guest01";
         guests[0].age = 25;
 
-        languages["zh-cn"] = "你好！";
-        languages["en-us"] = "Hello!";
+        languages["zh-cn"] = "中文";
+        languages["en-us"] = "English";
     }
 
     void addGuest(string name, int age) {
