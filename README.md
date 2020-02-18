@@ -6,7 +6,7 @@ A XML library for D Programming Language.
 ## Features
 * DOM parser: parse XML Document
 * DOM writer: to string and to file
-* Object serialization/seserialization
+* Object serialization/deserialization
 
 
 ## Examples
