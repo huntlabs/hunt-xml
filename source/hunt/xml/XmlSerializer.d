@@ -637,19 +637,15 @@ final class XmlSerializer {
      */
     static Document toDocument(SerializationOptions options = SerializationOptions(), T)(T value)
             if (is(T == struct) && !is(T == SysTime)) {
-
-        static if(is(T == Document)) {
-            return value;
-        } else {
-            auto result = Document();
-            debug(HUNT_DEBUG_MORE) info("======== current type: struct " ~ T.stringof);
-                
-            static foreach (string member; FieldNameTuple!T) {
-                serializeMember!(member, options)(value, result);
-            }
-
-            return result;
+ 
+        auto result = new Document();
+        debug(HUNT_DEBUG_MORE) info("======== current type: struct " ~ T.stringof);
+            
+        static foreach (string member; FieldNameTuple!T) {
+            serializeMember!(member, options)(value, result);
         }
+
+        return result;
     }
 
     /**

@@ -6,6 +6,8 @@ void main() {
 	loadAndSave();
 	objectToXml();
 	xmlToObject();
+	testStruct();
+
 }
 
 // read/write
@@ -61,7 +63,6 @@ void xmlToObject() {
 }
 
 
-
 /** 
  * 
  */
@@ -97,3 +98,14 @@ class GreetingSettings : GreetingSettingsBase {
         this._color = c;
     }
 }
+
+void testStruct() {
+	Vector3 vector = Vector3(1,3,5);
+
+	Document doc = toDocument(vector);
+	writeln(doc.toPrettyString());	
+}
+
+struct Vector3 {
+	float x, y, z; 
+} 
