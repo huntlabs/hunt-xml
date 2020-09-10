@@ -112,7 +112,7 @@ final class XmlSerializer {
     /**
      * Struct
      */
-    static T toObject(T, bool canThrow = false)(Document json, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Document doc, T defaultValue = T.init) 
             if (is(T == struct) && !is(T == SysTime)) {
 
         auto result = T();

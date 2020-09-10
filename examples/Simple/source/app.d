@@ -103,7 +103,9 @@ void testStruct() {
 	Vector3 vector = Vector3(1,3,5);
 
 	Document doc = toDocument(vector);
-	writeln(doc.toPrettyString());	
+	writeln(doc.toPrettyString());
+
+	Vector3 v3 = toObject!(Vector3)(doc);
 }
 
 struct Vector3 {
