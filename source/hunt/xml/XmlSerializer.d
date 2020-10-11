@@ -92,6 +92,10 @@ final class XmlSerializer {
     static T toObject(T, TraverseBase traverseBase = TraverseBase.yes, bool canThrow = false)
             (Element element, T defaultValue = T.init) if (is(T == class) && __traits(compiles, new T())) { // is(typeof(new T()))
 
+        debug(HUNT_DEBUG_MORE) {
+            tracef("Element name: %s, text: %s", element.getName(), element.getText());
+        }
+
         auto result = new T();
         if(element is null)
             return result;
@@ -184,10 +188,10 @@ final class XmlSerializer {
         alias memberType = typeof(currentMember);
         
         debug(HUNT_DEBUG_MORE) {
-            infof("deserializing member: %s %s", memberType.stringof, member);
+            infof("deserializing member in %s: %s %s", T.stringof, memberType.stringof, member);
         }
 
-        static if(hasUDA!(currentMember, Ignore) ||hasUDA!(__traits(getMember, T, member), XmlIgnore)) {
+        static if(hasUDA!(currentMember, Ignore) || hasUDA!(__traits(getMember, T, member), XmlIgnore)) {
             version(HUNT_DEBUG) {
                 infof("Ignore a member: %s %s", memberType.stringof, member);
             }               
@@ -198,7 +202,7 @@ final class XmlSerializer {
                 alias xmlAttributeUDAs = getUDAs!(currentMember, XmlAttribute);
                 alias xmlElementUDAs = getUDAs!(currentMember, XmlElement);
                 static if(xmlAttributeUDAs.length > 0 && xmlElementUDAs.length > 0) {
-                    static assert(false, "Cna't use both XmlAttribute and XmlElement at one time");
+                    static assert(false, "Can't use both XmlAttribute and XmlElement at the same time");
                 }
 
                 static if(xmlAttributeUDAs.length > 0) {
@@ -230,14 +234,23 @@ final class XmlSerializer {
                     enum elementName = member;
                     Element ele = element.firstNode(elementName);
                     if(ele is null) {
-                        version(HUNT_DEBUG) warningf("No data available for member: %s", member);
+                        version(HUNT_DEBUG) {
+                            warningf("No data available for member: %s, type: %s", member, memberType.stringof);
+                        }
                     } else {
+                        static if(is(memberType == class) || (is(memberType == struct) && !is(memberType == SysTime))) {
+                            ele = ele.firstNode(memberType.stringof);
+                        }
+
+                        debug(HUNT_DEBUG_MORE) {
+                            if(ele is null) {
+                                warningf("No data available for member: %s, type: %s", member, memberType.stringof);
+                            } else {
+                                tracef("Element name: %s, text: %s, elementName: %s", 
+                                    ele.getName(), ele.getText(), elementName);
+                            }
+                        }
                         __traits(getMember, target, member) = toObject!(memberType)(ele);
-                        // static if(isAssociativeArray!(memberType)) {
-                        //     __traits(getMember, target, member) = toObject!(memberType)(ele);
-                        // } else {
-                        //     __traits(getMember, target, member) = toObject!(memberType)(ele);
-                        // }
                     }
                 }
             }     
@@ -284,6 +297,9 @@ final class XmlSerializer {
         return t;
     }
 
+    /**
+     * 
+     */
     static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
             if(is(T == SysTime)) {
 
@@ -339,7 +355,11 @@ final class XmlSerializer {
             } else {
                 debug(HUNT_DEBUG_MORE) trace(txtElement.toString());
                 string text = txtElement.getText();
-                return text.to!T;
+                static if (isSomeString!T) {
+                    return text;
+                } else {
+                    return text.to!T;
+                }
             }
         } catch(Exception ex) {
             return handleException!(T, canThrow)(element, ex.msg, defaultValue);
@@ -898,6 +918,34 @@ final class XmlSerializer {
             txt.setText(v);
             result.appendNode(txt);
         }
+
+        return result;
+    }
+
+    /**
+     * 
+     */
+    static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal, T)
+        (string name, T value) if (is(T == class)) {
+
+        Element result = new Element(name);
+        if(value !is null) {
+            Element c = serializeObject!(options)(value);
+            result.appendNode(c);
+        }
+
+        return result;
+    }
+
+    /**
+     * 
+     */
+    static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal, T)
+        (string name, T value) if (is(T == struct)) {
+
+        Element result = new Element(name);
+        Element o = serializeObject!(options)(value);
+        result.appendNode(o);
 
         return result;
     }

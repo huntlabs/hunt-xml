@@ -21,7 +21,11 @@ class SerializerTest {
     }
 
     void testBasic() {
+        // QimenEntryOrderConfirmMessage m = new QimenEntryOrderConfirmMessage();
 
+        // //
+        // Document xv = XmlSerializer.toDocument(m);
+        // trace(xv.toPrettyString());
     }
 
 
@@ -39,9 +43,15 @@ class SerializerTest {
         gt.currentTime = currentStdTime;
         gt.setColor("Red");
         gt.setContent("Hello");
+
+        gt.currentGuest.name = "Jerry";
+        gt.currentGuest.age = 30;
+
+        //
         Document xv = XmlSerializer.toDocument(gt);
         trace(xv.toPrettyString());
 
+        //
         Greeting gt1 = XmlSerializer.toObject!(Greeting)(xv);
         assert(gt1 !is null);
         // trace("gt====>", gt, "====");
@@ -69,12 +79,18 @@ class SerializerTest {
 
         string[string] languages = gt1.languages;
         assert(languages.length >=2);
-        assert(languages["en-us"] == "Hello!");
+        assert(languages["en-us"] == "English");
 
         Guest[] guests = gt1.guests;
         assert(guests.length >=1);
         assert(guests[0].name == gt.guests[0].name);
         assert(guests[0].age == gt.guests[0].age);
+
+        Guest currentGuest = gt1.currentGuest;
+        warning(currentGuest.name);
+        warning(currentGuest.age);
+        assert(currentGuest.name == gt.currentGuest.name);
+        
     }
 
 
@@ -275,6 +291,8 @@ class Greeting : GreetingBase {
     
     @XmlIgnore
     long currentTime;
+
+    Guest currentGuest;
     
     byte[] bytes;
     string[] members;
@@ -313,6 +331,10 @@ class Greeting : GreetingBase {
 
         languages["zh-cn"] = "中文";
         languages["en-us"] = "English";
+
+        currentGuest = new Guest();
+        currentGuest.name = "Current Guest";
+        currentGuest.age = 13;
     }
 
     void addGuest(string name, int age) {
@@ -356,3 +378,85 @@ class Guest {
     string name;
     int age;
 }
+
+
+
+
+// @XmlRootElement("request")
+// class QimenEntryOrderConfirmMessage
+// {
+    
+//     EntryOrder entryOrder;
+//     OrderLine[] orderLines;
+
+//     this() {
+//         entryOrder = new EntryOrder();
+//         orderLines ~= new OrderLine();
+//     }
+
+//     string getMethod()
+//     {
+//         return "taobao.qimen.entryorder.confirm";
+//     }
+// }
+
+
+
+// class EntryOrder
+// {
+//     string orderCode;
+//     // string orderId;
+//     // string orderType;
+//     // string warehouseName;
+//     // int totalOrderLines;
+//     // string entryOrderCode;
+//     // string ownerCode;
+//     // string purchaseOrderCode;
+//     // string warehouseCode;
+//     // string entryOrderId;
+//     // string entryOrderType;
+//     // string outBizCode;
+//     // int confirmType;
+//     // string status;
+//     // string operateTime;
+//     // string remark;
+//     // string freight;
+//     // string subOrderType;
+//     // string responsibleDepartment;
+//     // string shopNick;
+//     // string shopCode;
+// }
+
+// class OrderLine
+// {
+//     this() {
+//         batchs ~= new Batch();
+//     }
+//     string orderLineNo;
+//     // string sourceOrderCode;
+//     // string subSourceOrderCode;
+//     // string ownerCode;
+//     // string itemCode;
+//     // string itemId;
+//     // string inventoryType;
+//     // int planQty;
+//     // int actualQty;
+//     // string batchCode;
+//     // string productDate;
+//     // string expireDate;
+//     // string produceCode;
+//     Batch[] batchs;
+//     // string remark;
+//     // string unit;
+//     // SnList snList;
+// }
+
+// class Batch
+// {
+//     string batchCode = "abc";
+//     // string productDate;
+//     // string expireDate;
+//     // string produceCode;
+//     // string inventoryType;
+//     // int actualQty;
+// }
