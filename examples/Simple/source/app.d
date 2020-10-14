@@ -2,11 +2,11 @@ import hunt.xml;
 import std.stdio;
 
 void main() {
-	readAndWrite();
-	loadAndSave();
-	objectToXml();
-	xmlToObject();
-	testStruct();
+	//readAndWrite();
+	//loadAndSave();
+	//objectToXml();
+  xmlToObject2();
+//	testStruct();
 
 }
 
@@ -32,7 +32,7 @@ void objectToXml() {
 	Document doc = toDocument(settings);
 	writeln(doc.toPrettyString());
 
-/*	
+/*
 	<Greeting ID='1002'>
 		<GreetingBase>
 			<city/>
@@ -40,7 +40,7 @@ void objectToXml() {
 		</GreetingBase>
 		<Color>Red</Color>
 	</Greeting>
-*/	
+*/
 }
 
 
@@ -63,8 +63,82 @@ void xmlToObject() {
 }
 
 
-/** 
- * 
+void xmlToObject2() {
+  string text = `
+	<response>
+    <flag>success|failure</flag>
+    <code>响应码</code>
+    <message>响应信息</message>
+    <item>
+      <itemCode>商品编码, string (50) , 必填</itemCode>
+      <extendProps>
+        <key1>value1</key1>
+        <key2>value2</key2>
+      </extendProps>
+    </item>
+
+  </response>
+	`;
+
+  auto obj = toObject!(Test)(text);
+  assert(obj.flag == "success|failure");
+  assert(obj.code == "响应码");
+  assert(obj.message == "响应信息");
+  assert(obj.item !is null);
+  assert(obj.item.itemCode == "商品编码, string (50) , 必填");
+  assert(obj.item.extendProps.key1 == "value1");
+  assert(obj.item.extendProps.key2 == "value2");
+
+  Document doc = toDocument(obj);
+  writeln(doc.toPrettyString());
+}
+
+class Item
+{
+    this()
+    {
+    }
+    @XmlElement("itemCode")
+    string itemCode;
+
+
+    @XmlElement("extendProps")
+    Extend extendProps;
+}
+
+class Extend
+{
+  @XmlElement("key1")
+  string key1;
+
+  @XmlElement("key2")
+  string key2;
+}
+
+
+@XmlRootElement("response")
+class Test  {
+
+  @XmlElement("flag")
+  string flag;
+
+  @XmlElement("code")
+  string code;
+
+  @XmlElement("message")
+  string message;
+
+  @XmlElement("item")
+  Item item;
+
+  this() {
+
+  }
+
+}
+
+/**
+ *
  */
 @XmlRootElement("GreetingBase")
 abstract class GreetingSettingsBase {
@@ -80,7 +154,7 @@ class GreetingSettings : GreetingSettingsBase {
 
     @XmlElement("Color")
     private string _color;
-    
+
     this() {
         _color = "black";
     }
@@ -109,5 +183,5 @@ void testStruct() {
 }
 
 struct Vector3 {
-	float x, y, z; 
-} 
+	float x, y, z;
+}
