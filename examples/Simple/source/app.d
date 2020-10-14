@@ -2,37 +2,37 @@ import hunt.xml;
 import std.stdio;
 
 void main() {
-	//readAndWrite();
-	//loadAndSave();
-	//objectToXml();
+  //readAndWrite();
+  //loadAndSave();
+  //objectToXml();
   xmlToObject2();
-//	testStruct();
+  //	testStruct();
 
 }
 
 // read/write
 void readAndWrite() {
-    Document doc = Document.parse("<single-element attr1='one' attr2=\"two\"/>");
-    auto node = doc.firstNode();
-    assert(node.getName() == "single-element");
-	assert(doc.toPrettyString() == "<single-element attr1='one' attr2='two'/>\n");
+  Document doc = Document.parse("<single-element attr1='one' attr2=\"two\"/>");
+  auto node = doc.firstNode();
+  assert(node.getName() == "single-element");
+  assert(doc.toPrettyString() == "<single-element attr1='one' attr2='two'/>\n");
 }
 
 // load/save
 void loadAndSave() {
-	Document document = Document.load("resources/books.xml");
-	document.save("output.xml");
+  Document document = Document.load("resources/books.xml");
+  document.save("output.xml");
 }
 
 // Serialization
 void objectToXml() {
-	GreetingSettings settings = new GreetingSettings(1002, "Red");
-	settings.name = "hunt";
+  GreetingSettings settings = new GreetingSettings(1002, "Red");
+  settings.name = "hunt";
 
-	Document doc = toDocument(settings);
-	writeln(doc.toPrettyString());
+  Document doc = toDocument(settings);
+  writeln(doc.toPrettyString());
 
-/*
+  /*
 	<Greeting ID='1002'>
 		<GreetingBase>
 			<city/>
@@ -43,10 +43,9 @@ void objectToXml() {
 */
 }
 
-
 // Deserialization
 void xmlToObject() {
-	string text = `
+  string text = `
 	<Greeting ID='1003'>
 		<GreetingBase>
 			<city/>
@@ -56,12 +55,11 @@ void xmlToObject() {
 	</Greeting>
 	`;
 
-	auto obj = toObject!(GreetingSettings)(text);
-	assert(obj._id == 1003);
-	assert(obj.name == "hunt");
-	assert(obj.color == "Red");
+  auto obj = toObject!(GreetingSettings)(text);
+  assert(obj._id == 1003);
+  assert(obj.name == "hunt");
+  assert(obj.color == "Red");
 }
-
 
 void xmlToObject2() {
   string text = `
@@ -93,21 +91,18 @@ void xmlToObject2() {
   writeln(doc.toPrettyString());
 }
 
-class Item
-{
-    this()
-    {
-    }
-    @XmlElement("itemCode")
-    string itemCode;
+class Item {
+  this() {
+  }
 
+  @XmlElement("itemCode")
+  string itemCode;
 
-    @XmlElement("extendProps")
-    Extend extendProps;
+  @XmlElement("extendProps")
+  Extend extendProps;
 }
 
-class Extend
-{
+class Extend {
   @XmlElement("key1")
   string key1;
 
@@ -115,9 +110,8 @@ class Extend
   string key2;
 }
 
-
 @XmlRootElement("response")
-class Test  {
+class Test {
 
   @XmlElement("flag")
   string flag;
@@ -130,11 +124,6 @@ class Test  {
 
   @XmlElement("item")
   Item item;
-
-  this() {
-
-  }
-
 }
 
 /**
@@ -142,46 +131,46 @@ class Test  {
  */
 @XmlRootElement("GreetingBase")
 abstract class GreetingSettingsBase {
-    string city;
-    string name = "HuntLabs";
+  string city;
+  string name = "HuntLabs";
 }
 
 @XmlRootElement("Greeting")
 class GreetingSettings : GreetingSettingsBase {
 
-    @XmlAttribute("ID")
-    int _id = 1001;
+  @XmlAttribute("ID")
+  int _id = 1001;
 
-    @XmlElement("Color")
-    private string _color;
+  @XmlElement("Color")
+  private string _color;
 
-    this() {
-        _color = "black";
-    }
+  this() {
+    _color = "black";
+  }
 
-    this(int id, string color) {
-		_id = id;
-        _color = color;
-    }
+  this(int id, string color) {
+    _id = id;
+    _color = color;
+  }
 
-    string color() {
-        return _color;
-    }
+  string color() {
+    return _color;
+  }
 
-    void color(string c) {
-        this._color = c;
-    }
+  void color(string c) {
+    this._color = c;
+  }
 }
 
 void testStruct() {
-	Vector3 vector = Vector3(1,3,5);
+  Vector3 vector = Vector3(1, 3, 5);
 
-	Document doc = toDocument(vector);
-	writeln(doc.toPrettyString());
+  Document doc = toDocument(vector);
+  writeln(doc.toPrettyString());
 
-	Vector3 v3 = toObject!(Vector3)(doc);
+  Vector3 v3 = toObject!(Vector3)(doc);
 }
 
 struct Vector3 {
-	float x, y, z;
+  float x, y, z;
 }

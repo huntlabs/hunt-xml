@@ -626,7 +626,11 @@ final class XmlSerializer {
         } else {
             enum RootNodeName = T.stringof;
         }
+
+        debug(HUNT_DEBUG_MORE) {
           tracef("RootNodeName : %s" ,RootNodeName);
+        }
+
         if (rootNode is null )
         {
             rootNode = new Element(RootNodeName);
@@ -848,7 +852,10 @@ final class XmlSerializer {
 
         if (canSetValue) {
             auto existNode = parent.firstNode(elementName);
-            tracef("elementName  %s" ,elementName);
+            debug(HUNT_DEBUG_MORE) {
+                tracef("elementName  %s" ,elementName);
+            }
+
             if(existNode !is null) {
                 version(HUNT_DEBUG) warning("overrided field: " ~ member);
             }
