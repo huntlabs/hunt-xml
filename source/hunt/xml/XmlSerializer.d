@@ -27,22 +27,22 @@ import std.traits;
  */
 enum XmlIgnore;
 
-/** 
- * 
+/**
+ *
  */
 struct XmlRootElement {
     string name;
 }
 
-/** 
- * 
+/**
+ *
  */
 struct XmlAttribute {
     string name;
 }
 
-/** 
- * 
+/**
+ *
  */
 struct XmlElement {
     string name;
@@ -52,7 +52,7 @@ struct XmlElement {
 enum MetaTypeName = "__metatype__";
 
 /**
- * 
+ *
  */
 interface XmlSerializable {
 
@@ -63,7 +63,7 @@ interface XmlSerializable {
 
 
 /**
- * 
+ *
  */
 final class XmlSerializer {
 
@@ -116,7 +116,7 @@ final class XmlSerializer {
     /**
      * Struct
      */
-    static T toObject(T, bool canThrow = false)(Document doc, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Document doc, T defaultValue = T.init)
             if (is(T == struct) && !is(T == SysTime)) {
 
         auto result = T();
@@ -165,7 +165,7 @@ final class XmlSerializer {
                 debug(HUNT_DEBUG_MORE) {
                     infof("deserializing fields in base %s for %s", BaseType.stringof, T.stringof);
                 }
-                
+
                 alias xmlRootUDAs = getUDAs!(BaseType, XmlRootElement);
                 static if(xmlRootUDAs.length > 0) {
                     enum RootNodeName = xmlRootUDAs[0].name;
@@ -183,10 +183,10 @@ final class XmlSerializer {
 
     private static void deserializeMember(string member, T, TraverseBase traverseBase = TraverseBase.yes)
             (ref T target, Element element) {
-        
+
         alias currentMember = __traits(getMember, T, member);
         alias memberType = typeof(currentMember);
-        
+
         debug(HUNT_DEBUG_MORE) {
             infof("deserializing member in %s: %s %s", T.stringof, memberType.stringof, member);
         }
@@ -194,7 +194,7 @@ final class XmlSerializer {
         static if(hasUDA!(currentMember, Ignore) || hasUDA!(__traits(getMember, T, member), XmlIgnore)) {
             version(HUNT_DEBUG) {
                 infof("Ignore a member: %s %s", memberType.stringof, member);
-            }               
+            }
         } else {
             static if(is(memberType == interface) && !is(memberType : XmlSerializable)) {
                 version(HUNT_DEBUG) warning("skipped a interface member (not XmlSerializable): " ~ member);
@@ -210,7 +210,7 @@ final class XmlSerializer {
                     enum elementName = (ElementName.length == 0) ? member : ElementName;
                     static if(isAssociativeArray!(memberType)) {
                         // TODO: Tasks pending completion -@zhangxueping at 2019-12-04T15:15:54+08:00
-                        // 
+                        //
                         __traits(getMember, target, member) = toObject!(memberType, false)(element);
                     } else {
                         Attribute att = element.firstAttribute(elementName);
@@ -228,7 +228,14 @@ final class XmlSerializer {
                     if(ele is null) {
                         version(HUNT_DEBUG) warningf("No data available for member: %s", member);
                     } else {
+                      static if(is(memberType == class) || (is(memberType == struct) && !is(memberType == SysTime))) {
+                        __traits(getMember, target, member) = toObject!(memberType,traverseBase, false)(ele);
+                      }else
+                      {
                         __traits(getMember, target, member) = toObject!(memberType, false)(ele);
+                      }
+
+
                     }
                 } else {
                     enum elementName = member;
@@ -238,22 +245,22 @@ final class XmlSerializer {
                             warningf("No data available for member: %s, type: %s", member, memberType.stringof);
                         }
                     } else {
-                        static if(is(memberType == class) || (is(memberType == struct) && !is(memberType == SysTime))) {
-                            ele = ele.firstNode(memberType.stringof);
-                        }
+                       // static if(is(memberType == class) || (is(memberType == struct) && !is(memberType == SysTime))) {
+                          //  ele = ele.firstNode(memberType.stringof);
+                        //}
 
                         debug(HUNT_DEBUG_MORE) {
                             if(ele is null) {
                                 warningf("No data available for member: %s, type: %s", member, memberType.stringof);
                             } else {
-                                tracef("Element name: %s, text: %s, elementName: %s", 
+                                tracef("Element name: %s, text: %s, elementName: %s",
                                     ele.getName(), ele.getText(), elementName);
                             }
                         }
                         __traits(getMember, target, member) = toObject!(memberType)(ele);
                     }
                 }
-            }     
+            }
         }
     }
 
@@ -271,15 +278,15 @@ final class XmlSerializer {
     }
 
 
-    /** 
+    /**
      * XmlSerializable
-     * 
+     *
      * Params:
-     *   element = 
-     *   T.init = 
-     * Returns: 
+     *   element =
+     *   T.init =
+     * Returns:
      */
-    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init)
             if(is(T == interface) && is(T : XmlSerializable)) {
 
         Attribute attribute = element.firstAttribute(MetaTypeName);
@@ -298,9 +305,9 @@ final class XmlSerializer {
     }
 
     /**
-     * 
+     *
      */
-    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init)
             if(is(T == SysTime)) {
 
         Attribute attribute = element.firstAttribute("format");
@@ -327,22 +334,22 @@ final class XmlSerializer {
         return T.init;
     }
 
-    /** 
+    /**
      * string, int, long etc.
-     * 
+     *
      * Params:
-     *   element = 
-     *   T.init = 
-     * Returns: 
+     *   element =
+     *   T.init =
+     * Returns:
      */
-    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init) 
+    static T toObject(T, bool canThrow = false)(Element element, T defaultValue = T.init)
             if (isNumeric!T || isSomeString!T) {
 
         Element txtElement = element;
         if(element.getType() != NodeType.Text) {
             txtElement = element.firstNode();
         }
-        
+
         debug(HUNT_DEBUG_MORE) {
             trace(element.toString());
         }
@@ -366,19 +373,19 @@ final class XmlSerializer {
         }
     }
 
-    /** 
+    /**
      * string[], byte[], int[] etc.
-     * 
+     *
      * Params:
-     *   element = 
-     * 
-     *   T.init = 
-     * Returns: 
-     */    
+     *   element =
+     *
+     *   T.init =
+     * Returns:
+     */
     static T toObject(T : U[], bool canThrow = false, U)
             (Element element,  U defaultValue = U.init)
             if (isSomeString!U || (isBasicType!U && !isSomeString!T)) {
-        
+
         Appender!T appender;
         debug(HUNT_DEBUG_MORE) {
             trace(element.toString());
@@ -406,20 +413,20 @@ final class XmlSerializer {
                     handleException(txtElement, ex.msg, defaultValue);
                 }
             }
-            
+
             currentElement = currentElement.nextSibling();
         }
 
         return appender.data;
     }
 
-    /** 
+    /**
      * class[] or struct[]
-     * 
+     *
      * Params:
-     *   element = 
-     *   U.init = 
-     * Returns: 
+     *   element =
+     *   U.init =
+     * Returns:
      */
     static T toObject(T : U[], bool canThrow = false, U)(Element element,  U defaultValue = U.init)
             if (is(U == class) || is(U==struct)) {
@@ -430,7 +437,7 @@ final class XmlSerializer {
         Appender!T appender;
         Element currentElement = element.firstNode();
 
-        while(currentElement !is null) {            
+        while(currentElement !is null) {
             debug(HUNT_DEBUG_MORE) trace(currentElement.toString());
             static if(is(U == SysTime)) {
                 U v = toObject!(SysTime)(currentElement);
@@ -445,21 +452,21 @@ final class XmlSerializer {
         return appender.data;
     }
 
-    /** 
+    /**
      * V[K]
-     * 
+     *
      * Params:
-     *   element = 
-     *   T.init = 
-     * Returns: 
+     *   element =
+     *   T.init =
+     * Returns:
      */
     static T toObject(T : V[K],  bool childNodeStyle = true, bool canThrow = false, V, K)(
             Element element, T defaultValue = T.init) if (isAssociativeArray!T) {
-        
+
         T result;
 
         static if(is(V == class) || is(V == struct)) {
-            warning("TODO: " ~ T.stringof); 
+            warning("TODO: " ~ T.stringof);
         }
         debug(HUNT_DEBUG_MORE) trace(element.toString());
 
@@ -471,7 +478,7 @@ final class XmlSerializer {
 
                 static if(is(V == class) || is(V == struct)) {
                     // TODO: Tasks pending completion -@zhangxueping at 2019-12-04T15:01:09+08:00
-                    // 
+                    //
                 } else {
                     Element txtElement = currentElement.firstNode();
                     debug(HUNT_DEBUG_MORE) {
@@ -494,7 +501,7 @@ final class XmlSerializer {
                             }
                         }
                     }
-                } 
+                }
 
                 currentElement = currentElement.nextSibling();
             }
@@ -505,10 +512,10 @@ final class XmlSerializer {
                 debug(HUNT_DEBUG_MORE) trace(attr.toString());
                 string key = attr.getName();
                 string v = attr.getValue();
-                
+
                 static if(is(V == class) || is(V == struct)) {
                     // TODO: Tasks pending completion -@zhangxueping at 2019-12-04T15:01:09+08:00
-                    // 
+                    //
                 } else static if(isSomeString!V) {
                     static if(isSomeString!V) {
                         result[key] = v;
@@ -526,8 +533,8 @@ final class XmlSerializer {
 
         return result;
     }
-    
-    private static T handleException(T, bool canThrow = false) (Element element, 
+
+    private static T handleException(T, bool canThrow = false) (Element element,
         string message, T defaultValue = T.init) {
         static if (canThrow) {
             throw new XmlException(element.toString() ~ " is not a " ~ T.stringof ~ " type");
@@ -556,13 +563,13 @@ final class XmlSerializer {
     /// ditto
     static Document toDocument(SerializationOptions options, T)
             (T value) if (is(T == class)) {
-        
+
         debug(HUNT_DEBUG_MORE) {
             info("======== current type: class " ~ T.stringof);
             tracef("%s, T: %s",
                 options, T.stringof);
         }
-        
+
         Document doc = new Document();
         Element rootNode;
         static if(is(T : XmlSerializable)) {
@@ -576,17 +583,17 @@ final class XmlSerializer {
         return doc;
     }
 
-    
+
     /**
      * XmlSerializable
      */
     static Document toDocument(IncludeMeta includeMeta = IncludeMeta.yes, T)
             (T value) if (is(T == interface) && is(T : XmlSerializable)) {
-        
+
         debug(HUNT_DEBUG_MORE) {
             info("======== current type: interface " ~ T.stringof);
         }
-        
+
         Document doc = new Document();
         Element  rootNode = toXmlElement!(XmlSerializable, includeMeta)("", value);
         doc.appendNode(rootNode);
@@ -598,7 +605,7 @@ final class XmlSerializer {
      * class object
      */
     static Element serializeObject(SerializationOptions options = SerializationOptions.Full, T)
-            (T value) if (is(T == class)) {
+            (T value , Element rootNode = null) if (is(T == class)) {
         import std.traits : isSomeFunction, isType;
 
         debug(HUNT_DEBUG_MORE) {
@@ -619,14 +626,17 @@ final class XmlSerializer {
         } else {
             enum RootNodeName = T.stringof;
         }
-
-        Element rootNode = new Element(RootNodeName);
+          tracef("RootNodeName : %s" ,RootNodeName);
+        if (rootNode is null )
+        {
+            rootNode = new Element(RootNodeName);
+        }
         static if(options.includeMeta) {
             Attribute attribute = new Attribute(MetaTypeName, typeid(T).name);
             rootNode.appendAttribute(attribute);
         }
         // debug(HUNT_DEBUG_MORE) pragma(msg, "======== current type: class " ~ T.stringof);
-        
+
         // super fields
         static if(options.traverseBase) {
             alias baseClasses = BaseClassesTuple!T;
@@ -642,9 +652,9 @@ final class XmlSerializer {
                 }
             }
         }
-        
+
         // current fields
-		static foreach (string member; FieldNameTuple!T) {
+		   static foreach (string member; FieldNameTuple!T) {
             serializeMember!(member, options)(value, rootNode);
         }
 
@@ -657,10 +667,10 @@ final class XmlSerializer {
      */
     static Document toDocument(SerializationOptions options = SerializationOptions(), T)(T value)
             if (is(T == struct) && !is(T == SysTime)) {
- 
+
         auto result = new Document();
         debug(HUNT_DEBUG_MORE) info("======== current type: struct " ~ T.stringof);
-            
+
         static foreach (string member; FieldNameTuple!T) {
             serializeMember!(member, options)(value, result);
         }
@@ -671,7 +681,7 @@ final class XmlSerializer {
     /**
      * Object's memeber
      */
-    private static void serializeMember(string member, 
+    private static void serializeMember(string member,
             SerializationOptions options = SerializationOptions.Default, T)
             (T obj, Element parent) {
 
@@ -690,7 +700,7 @@ final class XmlSerializer {
         } else {
             enum canSerialize = true;
         }
-        
+
         debug(HUNT_DEBUG_MORE) {
             tracef("name: %s, %s", member, options);
         }
@@ -726,16 +736,16 @@ final class XmlSerializer {
             debug(HUNT_DEBUG_MORE) tracef("skipped member, name: %s", member);
         }
     }
-    
-    /** 
+
+    /**
      * Object member
-     * 
+     *
      * Params:
-     *   name = 
-     *   m = 
-     * Returns: 
+     *   name =
+     *   m =
+     * Returns:
      */
-    private static Element serializeObjectMember(SerializationOptions options = 
+    private static Element serializeObjectMember(SerializationOptions options =
             SerializationOptions.Default, T)(string name, ref T m) {
         enum depth = options.depth;
         static if(depth > 0) {
@@ -749,7 +759,7 @@ final class XmlSerializer {
         }
     }
 
-    private static void serializeMemberAsAttribute(SerializationOptions options, 
+    private static void serializeMemberAsAttribute(SerializationOptions options,
             string member, string elementName, T)(T m, Element parent) {
         //
         Node node;
@@ -777,14 +787,14 @@ final class XmlSerializer {
         }
     }
 
-    private static void serializeMemberAsElement(SerializationOptions options, 
+    private static void serializeMemberAsElement(SerializationOptions options,
             string member, string elementName, T)(T m, Element parent) {
-        
+
         assert(parent !is null, "The parent can't be null");
 
         Element element;
         enum depth = options.depth;
-        
+
         static if(is(T == interface) && is(T : XmlSerializable)) {
             static if(depth == -1 || depth > 0) { element = toXmlElement!(XmlSerializable)(elementName, m); }
         } else static if(is(T == SysTime)) {
@@ -793,11 +803,19 @@ final class XmlSerializer {
             element = toXmlElement(elementName, m);
         } else static if(is(T == class)) {
             if(m !is null) {
+               enum RootNodeName = T.stringof;
                 element = serializeObjectMember!(options)(elementName, m);
+                //if(RootNodeName == "Item")
+                //{
+                  // element = element.firstNode();
+                  //Element e = element;
+                  //e = e.firstNode().firstNode();
+                  //element.firstNode() =  e;
+               // }
             }
         } else static if(is(T == struct)) {
             element = serializeObjectMember!(options)(elementName, m);
-        } else static if(is(T : U[], U)) { 
+        } else static if(is(T : U[], U)) {
             if(m is null) {
                 static if(!options.ignoreNull) {
                     element = toXmlElement(elementName, m);
@@ -812,7 +830,7 @@ final class XmlSerializer {
             }
         } else {
             element = toXmlElement(elementName, m);
-        }        
+        }
 
         debug(HUNT_DEBUG_MORE) {
             if(element is null)
@@ -830,11 +848,14 @@ final class XmlSerializer {
 
         if (canSetValue) {
             auto existNode = parent.firstNode(elementName);
+            tracef("elementName  %s" ,elementName);
             if(existNode !is null) {
                 version(HUNT_DEBUG) warning("overrided field: " ~ member);
             }
 
             if(element !is null) {
+                enum RootNodeName = T.stringof;
+                //if(RootNodeName == "Item")
                 parent.appendNode(element);
             } else {
                 warningf("skipping null element for: %s %s", T.stringof, member);
@@ -873,7 +894,7 @@ final class XmlSerializer {
     static Element toXmlElement(T, IncludeMeta includeMeta = IncludeMeta.yes)
                     (string name, T value) if (is(T == interface) && is(T : XmlSerializable)) {
         debug(HUNT_DEBUG_MORE) {
-            infof("======== current type: interface = %s, Object = %s", 
+            infof("======== current type: interface = %s, Object = %s",
                 T.stringof, typeid(cast(Object)value).name);
         }
 
@@ -884,26 +905,26 @@ final class XmlSerializer {
 
         if(!name.empty())
             result.setName(name);
-        
+
         static if(includeMeta) {
             Attribute attribute = new Attribute(MetaTypeName, typeid(cast(Object)value).name);
             result.appendAttribute(attribute);
             // auto itemPtr = MetaTypeName in v;
             // FIXME: Needing refactor or cleanup -@zhangxueping at 2019-12-02T15:32:27+08:00
-            // 
+            //
             // if(itemPtr is null)
             //     v[MetaTypeName] = typeid(cast(Object)value).name;
-        } 
-        
+        }
+
         return result;
     }
 
-    /** 
+    /**
      * Basic types or string
-     * 
+     *
      * Params:
-     *   value = 
-     * Returns: 
+     *   value =
+     * Returns:
      */
     static Element toXmlElement(T)(string name, T value) if (isBasicType!T || isSomeString!(T)) {
         static if(isSomeString!(T)) {
@@ -923,22 +944,21 @@ final class XmlSerializer {
     }
 
     /**
-     * 
+     *
      */
     static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal, T)
         (string name, T value) if (is(T == class)) {
 
         Element result = new Element(name);
         if(value !is null) {
-            Element c = serializeObject!(options)(value);
-            result.appendNode(c);
+            Element c = serializeObject!(options)(value, result);
+           // result.appendNode(c);
         }
-
         return result;
     }
 
     /**
-     * 
+     *
      */
     static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal, T)
         (string name, T value) if (is(T == struct)) {
@@ -955,7 +975,7 @@ final class XmlSerializer {
      */
     static Element toXmlElement(T : U[], U)(string name, T value)
             if ((isBasicType!U && !isSomeString!T) || isSomeString!U) {
-                
+
         Element roolElement = new Element(name);
 
         if(value !is null) {
@@ -971,9 +991,9 @@ final class XmlSerializer {
     /**
      * class[]
      */
-    static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal, 
+    static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal,
             T : U[], U) (string name, T value) if(is(T : U[], U) && is(U == class)) {
-        
+
         Element roolElement = new Element(name);
         if(value !is null) {
             value.map!(item => serializeObject!(options)(item))
@@ -984,30 +1004,30 @@ final class XmlSerializer {
 
         return roolElement;
     }
-    
+
 
     /**
      * struct[]
      */
     static Element toXmlElement(SerializationOptions options = SerializationOptions.Normal,
             T : U[], U)(string name, T value) if(is(U == struct)) {
-                
+
         Element roolElement = new Element(name);
 
         if(value !is null) {
-            static if(is(U == SysTime)) {                                
+            static if(is(U == SysTime)) {
                 value.map!(item => toXmlElement("", item))
                     .each!((item) {
                             if(item !is null)  roolElement.appendNode(item);
                         })();
-            } else {                
+            } else {
                 value.map!(item => serializeObject!(options)(item))()
                     .each!((item) {
                             if(item !is null)  roolElement.appendNode(item);
                         })();
             }
         }
-        
+
         return roolElement;
     }
 
