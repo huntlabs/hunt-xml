@@ -30,9 +30,8 @@ class Node {
     protected string m_name;
     protected Element m_parent;
 
-    this() {
-
-    }
+    // this() {
+    // }
     
     this(NodeType type) {
         m_type = type;
@@ -41,6 +40,10 @@ class Node {
     this(string name, NodeType type) {
         m_name = name;
         m_type = type;
+    }
+
+    bool isDeclaration() {
+        return m_type == NodeType.Declaration;
     }
 
     /**

@@ -104,6 +104,15 @@ final class XmlSerializer {
             result.xmlDeserialize(element);
         } else {
             try {
+                // try to skip the declaration
+                debug(HUNT_DEBUG_MORE) {
+                    tracef("Element, name: %s, type: %s", element.getName(), element.getType());
+                }
+
+                if(element.isDeclaration()) {
+                    element = element.nextSibling();
+                }
+
                 deserializeObject!(T, traverseBase)(result, element);
             } catch (XmlException e) {
                 return handleException!(T, canThrow)(element, e.msg, defaultValue);
@@ -121,8 +130,18 @@ final class XmlSerializer {
 
         auto result = T();
         Element element = doc.firstNode();
-        if(element is null)
+        if(element is null) {
             return result;
+        }
+
+        // try to skip the declaration
+        debug(HUNT_DEBUG_MORE) {
+            tracef("Element, name: %s, type: %s", element.getName(), element.getType());
+        }
+
+        if(element.isDeclaration()) {
+            element = element.nextSibling();
+        }
 
         try {
             static foreach (string member; FieldNameTuple!T) {
@@ -215,7 +234,9 @@ final class XmlSerializer {
                     } else {
                         Attribute att = element.firstAttribute(elementName);
                         if(att is null) {
-                            version(HUNT_DEBUG) warningf("No data available for member: %s", member);
+                            version(HUNT_DEBUG) {
+                                warningf("No data available for member: %s, elementName: %s", member, elementName);
+                            }
                         } else {
                             __traits(getMember, target, member) = fromAttribute!(memberType, false)(att);
                         }
