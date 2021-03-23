@@ -412,27 +412,29 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
     private void writeNode(Element node) {
         // Print proper node type
         switch (node.getType()) {
-        case NodeType.Document:
-            writeChildren(node);
-            break;
+            case NodeType.Document:
+                writeChildren(node);
+                break;
 
-        case NodeType.Element:
-            writeElement(node);
-            break;
+            case NodeType.Element:
+                writeElement(node);
+                break;
 
-        case NodeType.Text:
-            // writeNodeText(node);
-            writeText(node.getText());
-            break;
+            case NodeType.Text:
+                writeText(node.getText());
+                break;
 
-        case NodeType.Declaration:
-            // writeNodeText(node);
-            writeDeclaration(node);
-            break;
+            case NodeType.Declaration:
+                writeDeclaration(node);
+                break;
 
-        default:
-            warningf("Unhandled node, name: %s, type: %s", node.getName(), node.getType());
-            break;
+            case NodeType.CDATA:
+                writeCDATA(node.getText());
+                break;
+
+            default:
+                warningf("Unhandled node, name: %s, type: %s", node.getName(), node.getType());
+                break;
         }
     }
     
@@ -483,7 +485,7 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
     }
 
     private void writeElement(Element element) {
-        Element child = element.firstNode();         
+        Element child = element.firstNode();
         debug(HUNT_DEBUG_MORE) {
             tracef("type: %s, name: %s, text: %s", element.getType(), element.getName(), element.getText());
         }
@@ -507,4 +509,5 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
             closeElement(element.getQualifiedName());
         }
     }
+
 }
