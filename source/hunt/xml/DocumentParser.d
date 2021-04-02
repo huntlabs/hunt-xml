@@ -7,6 +7,8 @@ import hunt.xml.Element;
 import hunt.xml.Node;
 import hunt.xml.Internal;
 
+import hunt.logging.ConsoleLogger;
+
 /** 
  * 
  */
@@ -187,6 +189,8 @@ class DocumentParser {
         // Trim trailing whitespace if flag is set; leading was already trimmed by whitespace skip after >
         if (Flags & ParsingFlags.TrimWhitespace)
         {
+            // FIXME: Needing refactor or cleanup -@zhangxueping at 2021-04-01T19:53:47+08:00
+            // 
             if (Flags & ParsingFlags.NormalizeWhitespace)
             {
                 // Whitespace is already condensed to single space characters by skipping function, so just trim 1 char off the end
@@ -288,7 +292,6 @@ class DocumentParser {
     static private char[] parseNodeContents(int Flags)(ref char[] text , Element node)
     {
         char[] retval;
-
         while(1)
         {
             char[] contents_start = text;

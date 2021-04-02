@@ -13,6 +13,8 @@ module hunt.xml.Internal;
 
 import hunt.xml.Common;
 
+import hunt.logging.ConsoleLogger;
+
 // dfmt off
 
 ubyte[256] lookup_whitespace = [
@@ -247,7 +249,7 @@ ubyte[256] lookup_digits =  [
     255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,  // 0
     255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,  // 1
     255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,  // 2
-    0,  1,  2,  3,  4,  5,  6,  7,  8,  9,255,255,255,255,255,255,  // 3
+    0,  1,  2,  3,  4,  5,  6,  7,  8,  9,255,255,255,255,255,255,    // 3
     255, 10, 11, 12, 13, 14, 15,255,255,255,255,255,255,255,255,255,  // 4
     255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,  // 5
     255, 10, 11, 12, 13, 14, 15,255,255,255,255,255,255,255,255,255,  // 6
@@ -292,37 +294,37 @@ void insertCodedCharacter(int Flags)(ref char[] text,  ulong code)
     {
         // Insert 8-bit ASCII character
         // Todo: possibly verify that code is less than 256 and use replacement char otherwise?
-        text[0] = (code);
-        text = text[ 1 .. $ - 1];
+        text[0] = cast(char)(code);
+        text = text[ 1 .. $];
     }
     else
     {
         // Insert UTF8 sequence
         if (code < 0x80)    // 1 byte sequence
         {
-            text[0] = (code);
-            text = text[1 .. $ - 1];
+            text[0] = cast(char)(code);
+            text = text[1 .. $];
         }
         else if (code < 0x800)  // 2 byte sequence
         {
-            text[1] = ((code | 0x80) & 0xBF); code >>= 6;
-            text[0] = (code | 0xC0);
-            text = text[ 2 .. $ - 1];
+            text[1] = cast(char)((code | 0x80) & 0xBF); code >>= 6;
+            text[0] = cast(char)(code | 0xC0);
+            text = text[ 2 .. $];
         }
         else if (code < 0x10000)    // 3 byte sequence
         {
-            text[2] = ((code | 0x80) & 0xBF); code >>= 6;
-            text[1] = ((code | 0x80) & 0xBF); code >>= 6;
-            text[0] = (code | 0xE0);
-            text = text[3 .. $ - 1];
+            text[2] = cast(char)((code | 0x80) & 0xBF); code >>= 6;
+            text[1] = cast(char)((code | 0x80) & 0xBF); code >>= 6;
+            text[0] = cast(char)(code | 0xE0);
+            text = text[3 .. $];
         }
         else if (code < 0x110000)   // 4 byte sequence
         {
-            text[3] = ((code | 0x80) & 0xBF); code >>= 6;
-            text[2] = ((code | 0x80) & 0xBF); code >>= 6;
-            text[1] = ((code | 0x80) & 0xBF); code >>= 6;
-            text[0] = (code | 0xF0);
-            text = text[4 .. $ - 1];
+            text[3] = cast(char)((code | 0x80) & 0xBF); code >>= 6;
+            text[2] = cast(char)((code | 0x80) & 0xBF); code >>= 6;
+            text[1] = cast(char)((code | 0x80) & 0xBF); code >>= 6;
+            text[0] = cast(char)(code | 0xF0);
+            text = text[4 .. $];
         }
         else    // Invalid, only codes up to 0x10FFFF are allowed in Unicode
         {
@@ -350,7 +352,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
     skip!(TP)(text);
     // Use translation skip
     char[] src = text;
-    char[] dest = src.dup;
+    char[] dest = src;
     long index = 0;
     while (T.test(src[0]))
     {
@@ -369,14 +371,14 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
                     {
                         dest[index] = ('&');
                         ++index;
-                        src=src[5..$-1];
+                        src=src[5..$];
                         continue;
                     }
                     if (src[2] == ('p') && src[3] == ('o') && src[4] == ('s') && src[5] == (';'))
                     {
                         dest[index] = ('\'');
                         ++index;
-                        src = src[6 .. $-1];
+                        src = src[6 .. $];
                         continue;
                     }
                     break;
@@ -387,7 +389,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
                     {
                         dest[index] = ('"');
                         ++index;
-                        src = src[6 .. $ - 1];
+                        src = src[6 .. $];
                         continue;
                     }
                     break;
@@ -398,7 +400,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
                     {
                         dest[index] = ('>');
                         ++index;
-                        src = src[4 .. $ - 1];
+                        src = src[4 .. $];
                         continue;
                     }
                     break;
@@ -409,7 +411,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
                     {
                         dest[index] = ('<');
                         ++index;
-                        src = src[ 4 .. $ - 1];
+                        src = src[ 4 .. $];
                         continue;
                     }
                     break;
@@ -418,34 +420,35 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
                 case ('#'):
                     if (src[2] == ('x'))
                     {
-                            ulong code = 0;
-                        src = src[3 .. $ - 1];   // Skip &#x
+                        ulong code = 0;
+                        src = src[3 .. $];   // Skip &#x
                         while (1)
                         {
                             ubyte digit = lookup_digits[src[0]];
                             if (digit == 0xFF)
                                 break;
                             code = code * 16 + digit;
-                            src = src[1 .. $ - 1];
+                            src = src[1 .. $];
                         }
-                        //   insertCodedCharacter!Flags(dest, code);    // Put character in output
+                        
+                        insertCodedCharacter!Flags(dest, code);    // Put character in output
                     }
                     else
                     {
                         ulong code = 0;
-                        src = src[2 .. $ - 1];   // Skip &#
+                        src = src[2 .. $];   // Skip &#
                         while (1)
                         {
                             ubyte digit = lookup_digits[src[0]];
                             if (digit == 0xFF)
                                 break;
                             code = code * 10 + digit;
-                            src=src[1 .. $ - 1];
+                            src=src[1 .. $];
                         }
-                    //      insertCodedCharacter!Flags(dest, code);    // Put character in output
+                         insertCodedCharacter!Flags(dest, code);    // Put character in output
                     }
                     if (src[0] == (';'))
-                        src=src[1..$ - 1];
+                        src=src[1..$];
                     else
                         throw new XmlParsingException("expected ;", src);
                     continue;
@@ -466,10 +469,10 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
             if (WhitespacePred.test(src[0]))
             {
                 dest[index] = (' '); ++index;    // Put single space in dest
-                src = src[1 .. $ - 1];                      // Skip first whitespace char
+                src = src[1 .. $];                      // Skip first whitespace char
                 // Skip remaining whitespace chars
                 while (WhitespacePred.test(src[0]))
-                    src = src[1 .. $ - 1];
+                    src = src[1 .. $];
                 continue;
             }
         }
@@ -477,7 +480,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
         // No replacement, only copy character
         dest[index] = src[0];
         ++index;
-        src = src[1 .. $ - 1];
+        src = src[1 .. $];
 
     }
 
