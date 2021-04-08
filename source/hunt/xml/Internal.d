@@ -372,6 +372,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
                         dest[index] = ('&');
                         ++index;
                         src=src[5..$];
+                        
                         continue;
                     }
                     if (src[2] == ('p') && src[3] == ('o') && src[4] == ('s') && src[5] == (';'))
@@ -486,6 +487,7 @@ static  char[] skipAndExpandCharacterRefs(T , TP , int Flags)(ref char[] text)
 
     // Return new end
     text = src;
+    dest = dest[index..$];
     return dest;
 
 }

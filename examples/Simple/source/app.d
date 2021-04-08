@@ -2,11 +2,25 @@ import hunt.xml;
 import std.stdio;
 
 void main() {
-	readAndWrite();
-	loadAndSave();
-	objectToXml();
-	xmlToObject();
-	testStruct();
+	// readAndWrite();
+	// loadAndSave();
+	// objectToXml();
+	// xmlToObject();
+	// testStruct();
+	escapeTest();
+}
+
+void escapeTest() {
+	string text = `
+        <receiverInfo>
+            <detailAddress>602&amp;#35;.</detailAddress>
+            <detailAddress>602&#35;.</detailAddress>
+        </receiverInfo>	
+`;
+
+	Document doc = Document.parse(text);
+
+	writeln(doc.toPrettyString());
 
 }
 
