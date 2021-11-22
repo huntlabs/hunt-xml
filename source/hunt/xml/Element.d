@@ -466,9 +466,10 @@ class Element : Node {
     void removeFirstAttribute()
     {
         Attribute attribute = m_first_attribute;
-        if(attribute.nextAttribute())
+        auto nextAttribute = attribute.nextAttribute();
+        if(nextAttribute)
         {
-            attribute.nextAttribute().previousAttribute = cast(Attribute)null;
+            nextAttribute.previousAttribute = cast(Attribute)null;
         }
         else
         {
@@ -476,7 +477,7 @@ class Element : Node {
         }
 
         attribute.m_parent = null;
-        m_first_attribute = attribute.nextAttribute();
+        m_first_attribute = nextAttribute;
     }
 
     void removeLastAttribute()
