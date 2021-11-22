@@ -7,7 +7,27 @@ void main() {
 	// objectToXml();
 	// xmlToObject();
 	// testStruct();
-	escapeTest();
+	//escapeTest();
+	removeFirst(`<svg><path stroke="red" fill="green" d="M 5 5 C 10 -15, 15 10, 10 10" /></svg>`);
+	removeLast(`<svg><path stroke="red" fill="green" d="M 5 5 C 10 -15, 15 10, 10 10" /></svg>`);
+}
+
+void removeFirst(string xml)
+{
+	auto doc = Document.parse(xml);
+	auto svg = doc.firstNode();
+	auto path = svg.firstNode();
+	path.removeFirstAttribute();
+	writeln(doc.toPrettyString());
+}
+
+void removeLast(string xml)
+{
+	auto doc = Document.parse(xml);
+	auto svg = doc.firstNode();
+	auto path = svg.firstNode();
+	path.removeLastAttribute();
+	writeln(doc.toPrettyString());
 }
 
 void escapeTest() {
