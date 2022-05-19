@@ -409,7 +409,7 @@ struct Writer(alias OutRange, alias PrettyPrinter = PrettyPrinters.Minimalizer) 
 
     }
 
-    private void writeNode(Element node) {
+    void writeNode(Element node) {
         // Print proper node type
         switch (node.getType()) {
             case NodeType.Document:
